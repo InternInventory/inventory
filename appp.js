@@ -16,10 +16,10 @@ app.use(bodyParser.json());
 
 // MySQL connection configuration
 const connection = mysql.createConnection({
-    host: 'localhost',
-    user: 'root',
-    password: 'shubham',
-    database: 'inventory',
+    host: "3.7.158.221",
+    user: "admin_buildINT",
+    password: "buildINT@2023$",
+    database: "inventory",
 });
 
 connection.connect((err) => {
@@ -807,52 +807,52 @@ app.get('/generate-pdf', (req, res) => {
     doc.font('Times-Bold').fontSize(14).text('Lightforce Buildint Pvt Ltd', 55, 130, { width: 504, height: 35, align: 'left' })
     doc.font('Times-Bold').fontSize(10).text('408-412, Srishti Palza, Off Saki Vihar Road,', 55, 145, { width: 504, height: 35, align: 'left' })
     doc.font('Times-Bold').fontSize(10).text('Powai, Mumbai 400072', 55, 160, { width: 504, height: 35, align: 'left' })
-    doc.rect(50, 180,514, 40).stroke();
+    doc.rect(50, 180, 514, 40).stroke();
     doc.font('Times-Bold').fontSize(25).text('Delivery Challan ', 165, 195, { width: 280, height: 5, align: 'center' })
-    doc.rect(50,220, 257, 25).stroke();
+    doc.rect(50, 220, 257, 25).stroke();
     doc.font('Times-Bold').fontSize(15).text('Challan Id :  ', 55, 230, { width: 280, height: 5, align: 'left' })
-    doc.rect(306,220, 257, 25).stroke();
+    doc.rect(306, 220, 257, 25).stroke();
     doc.font('Times-Bold').fontSize(15).text('Challan Date:  ', 310, 230, { width: 280, height: 5, align: 'left' })
-    doc.rect(50,245, 257, 25).stroke();
+    doc.rect(50, 245, 257, 25).stroke();
     doc.font('Times-Bold').fontSize(15).text('Contact Person :  ', 55, 252, { width: 280, height: 5, align: 'left' })
-    doc.rect(306,245, 257, 25).stroke();
+    doc.rect(306, 245, 257, 25).stroke();
     doc.font('Times-Bold').fontSize(15).text('Contact Number :  ', 310, 252, { width: 280, height: 5, align: 'left' })
-    doc.rect(50,270, 257, 25).stroke();
+    doc.rect(50, 270, 257, 25).stroke();
     doc.font('Times-Bold').fontSize(15).text('ATM ID :  ', 55, 275, { width: 280, height: 5, align: 'left' })
-    doc.rect(306,270    , 257, 25).stroke();
+    doc.rect(306, 270, 257, 25).stroke();
     doc.font('Times-Bold').fontSize(15).text('HPY Code :  ', 310, 275, { width: 280, height: 5, align: 'left' })
-    doc.rect(50,295, 257, 25).stroke();
+    doc.rect(50, 295, 257, 25).stroke();
     doc.font('Times-Bold').fontSize(15).text('Reverse Charge :  ', 55, 300, { width: 280, height: 5, align: 'left' })
-    doc.rect(306,295, 257, 25).stroke();
+    doc.rect(306, 295, 257, 25).stroke();
     doc.font('Times-Bold').fontSize(15).text('Reverse Charge  :  ', 310, 300, { width: 280, height: 5, align: 'left' })
-    doc.rect(50,320, 257, 65).stroke();
+    doc.rect(50, 320, 257, 65).stroke();
     doc.font('Times-Bold').fontSize(15).text('Billed To :  ', 55, 325, { width: 280, height: 5, align: 'left' })
     doc.font('Times-Bold').fontSize(12).text('Name :  ', 55, 345, { width: 280, height: 5, align: 'left' })
-    doc.rect(306,320, 257, 65).stroke();
+    doc.rect(306, 320, 257, 65).stroke();
     doc.font('Times-Bold').fontSize(15).text('Shipped To :  ', 310, 325, { width: 280, height: 5, align: 'left' })
     doc.font('Times-Bold').fontSize(12).text('Name :  ', 310, 345, { width: 280, height: 5, align: 'left' })
-    doc.rect(50,385, 50, 25).stroke();
-    doc.font('Times-Bold').fontSize(10).text('SR. NO:  ', 52, 395, { width: 280, height: 5, align: 'left' }) 
-    doc.rect(100,385, 207, 25).stroke();
+    doc.rect(50, 385, 50, 25).stroke();
+    doc.font('Times-Bold').fontSize(10).text('SR. NO:  ', 52, 395, { width: 280, height: 5, align: 'left' })
+    doc.rect(100, 385, 207, 25).stroke();
     doc.font('Times-Bold').fontSize(10).text('Description of Goods:  ', 150, 395, { width: 280, height: 5, align: 'left' })
-    doc.rect(306,385, 50, 25).stroke();
+    doc.rect(306, 385, 50, 25).stroke();
     doc.font('Times-Bold').fontSize(10).text('Qty  ', 315, 395, { width: 280, height: 5, align: 'left' })
-    doc.rect(356,385, 207, 25).stroke();
+    doc.rect(356, 385, 207, 25).stroke();
     doc.font('Times-Bold').fontSize(10).text('Approx Amount  ', 420, 395, { width: 280, height: 5, align: 'left' })
-    doc.rect(50,410, 50, 150).stroke();
-    doc.rect(100,410, 207, 150).stroke();
-    doc.rect(306,410, 207, 150).stroke();
-    doc.rect(356,410, 207, 150).stroke();
-    doc.rect(50,560, 50, 20).stroke();
-    doc.rect(100,560, 207, 20).stroke();
+    doc.rect(50, 410, 50, 150).stroke();
+    doc.rect(100, 410, 207, 150).stroke();
+    doc.rect(306, 410, 207, 150).stroke();
+    doc.rect(356, 410, 207, 150).stroke();
+    doc.rect(50, 560, 50, 20).stroke();
+    doc.rect(100, 560, 207, 20).stroke();
     doc.font('Times-Bold').fontSize(10).text('Total:', 140, 565, { width: 280, height: 5, align: 'center' })
-    doc.rect(306,560, 207, 20).stroke();
-    doc.rect(356,560, 207, 20).stroke();
-    doc.rect(50,580, 514, 30).stroke();
-    doc.font('Times-Bold').fontSize(10).text('If any difference is found in quantity, quality and rate etc. it should be notified in writing withing 24 Hours. No claim will be entertained thereafter', 52, 585 )
-    doc.font('Times-Bold').fontSize(10).text('For LIGHTFORCE BUILDINT PRIVATE LIMITED', 52, 615 )
+    doc.rect(306, 560, 207, 20).stroke();
+    doc.rect(356, 560, 207, 20).stroke();
+    doc.rect(50, 580, 514, 30).stroke();
+    doc.font('Times-Bold').fontSize(10).text('If any difference is found in quantity, quality and rate etc. it should be notified in writing withing 24 Hours. No claim will be entertained thereafter', 52, 585)
+    doc.font('Times-Bold').fontSize(10).text('For LIGHTFORCE BUILDINT PRIVATE LIMITED', 52, 615)
     doc.font('Times-Bold').fontSize(10).text('Authorized Signatory', 52, 690)
-    doc.font('Times-Bold').fontSize(10).text('Received By : ____', 250, 690 ,{ width: 280, height: 5, align: 'right' })
+    doc.font('Times-Bold').fontSize(10).text('Received By : ____', 250, 690, { width: 280, height: 5, align: 'right' })
 
     // Finalize the PDF and close the stream
     doc.end();
