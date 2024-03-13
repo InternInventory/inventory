@@ -53,9 +53,8 @@ function verifyToken(req, res, next) {
         next();
     });
 }
-
-app.get('/profile', (req, res) => {
-    const userId = req.headers['userid'];
+app.get('/profile/:userId', (req, res) => {
+    const userId = req.params.userId;
 
     connection.query('SELECT firstName FROM login WHERE userId = ?', [userId], (error, results) => {
         if (error) {
@@ -71,6 +70,8 @@ app.get('/profile', (req, res) => {
         
     });
 })
+
+
 
 
 
