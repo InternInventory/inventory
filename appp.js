@@ -7,22 +7,31 @@ const nodemailer = require('nodemailer');
 const randomstring = require('randomstring');
 const PDFDocument = require('pdfkit');
 const fs = require('fs');       //To read file
-
+const dotenv = require('dotenv');
+dotenv.config();
 const app = express();
 
 /// hellol
 
 app.use(bodyParser.json());
 
-// MySQL connection configuration
-const connection = mysql.createConnection({
-    host: "3.7.158.221",
-    user: "admin_buildINT",
-    password: "buildINT@2023$",
-    database: "inventory",
+//MySQL connection configuration
+const connection = mysql.createPool({
+    host: process.env.DB_HOST,
+    user: process.env.DB_USER,
+    password: process.env.DB_PASSWORD,
+    database: process.env.DB_DATABASE,
 });
 
-connection.connect((err) => {
+// Test
+// const connection = mysql.createConnection({
+//     host: "localhost",
+//     user: "admin_buildINT",
+//     password: "buildINT@2023$",
+//     database: "inventory",
+// });
+
+connection.getConnection((err) => {
     if (err) throw err;
     console.log('Connected to MySQL database');
 });
@@ -129,57 +138,57 @@ app.post('/login', async (req, res) => {
 });
 */
 
-// app.post('/add-items', verifyToken, (req, res) => {
-//     const { item_name, quantity, supplier_name } = req.body;
+app.post('/add-items', verifyToken, (req, res) => {
+    const { item_name, quantity, supplier_name } = req.body;
 
-//     if (!item_name || !quantity || !supplier_name) {
-//         return res.status(400).json({ error: 'Missing required fields (name, quantity)' });
-//     }
+    if (!item_name || !quantity || !supplier_name) {
+        return res.status(400).json({ error: 'Missing required fields (name, quantity)' });
+    }
 
-//     const newItem = {
-//         item_name,
-//         quantity,
-//         supplier_name
-//     };
+    const newItem = {
+        item_name,
+        quantity,
+        supplier_name
+    };
 
-//     connection.query('INSERT INTO additem SET ?', newItem, (error, results) => {
-//         if (error) {
-//             console.error('Error inserting item into database: ' + error.stack);
-//             return res.status(500).json({ error: 'Internal server error' });
-//         }
-//         console.log('Item added to database with ID: ' + results.insertId);
-//         res.status(201).json({ message: 'Item added successfully', item: newItem });
-//     });
-// })
-
-app.post('/additem', (req, res) => {
-    const { item_id, item_name, quantity, supplier_name } = req.body;
-
-    // Ensure quantity is treated as an integer
-    const parsedQuantity = parseInt(quantity);
-
-    // Check if item exists
-    connection.query('SELECT * FROM additem WHERE item_name = ?', [item_name], (error, results) => {
-        if (error) throw error;
-
-
-        if (results.length) {
-            // Update query to add quantity to existing quantity
-            const existingQuantity = results[0].quantity;
-            const updatedQuantity = existingQuantity + parsedQuantity;
-            connection.query('UPDATE additem SET quantity = ?, date = CURRENT_TIMESTAMP(), supplier_name = ? WHERE item_name = ?', [updatedQuantity, supplier_name, item_name], (err, result) => {
-                if (err) throw err;
-                res.send('Quantity updated successfully');
-            });
-        } else {
-            // Insert query
-            connection.query('INSERT INTO additem (item_name, quantity, date, supplier_name) VALUES (?, ?, CURRENT_TIMESTAMP(), ?)', [item_name, parsedQuantity, supplier_name], (err, result) => {
-                if (err) throw err;
-                res.send('Item added successfully');
-            });
+    connection.query('INSERT INTO additem SET ?', newItem, (error, results) => {
+        if (error) {
+            console.error('Error inserting item into database: ' + error.stack);
+            return res.status(500).json({ error: 'Internal server error' });
         }
+        console.log('Item added to database with ID: ' + results.insertId);
+        res.status(201).json({ message: 'Item added successfully', item: newItem });
     });
-});
+})
+
+// app.post('/additem', (req, res) => {
+//     const { item_id, item_name, quantity, supplier_name } = req.body;
+
+//     // Ensure quantity is treated as an integer
+//     const parsedQuantity = parseInt(quantity);
+
+//     // Check if item exists
+//     connection.query('SELECT * FROM additem WHERE item_name = ?', [item_name], (error, results) => {
+//         if (error) throw error;
+
+
+//         if (results.length) {
+//             // Update query to add quantity to existing quantity
+//             const existingQuantity = results[0].quantity;
+//             const updatedQuantity = existingQuantity + parsedQuantity;
+//             connection.query('UPDATE additem SET quantity = ?, date = CURRENT_TIMESTAMP(), supplier_name = ? WHERE item_name = ?', [updatedQuantity, supplier_name, item_name], (err, result) => {
+//                 if (err) throw err;
+//                 res.send('Quantity updated successfully');
+//             });
+//         } else {
+//             // Insert query
+//             connection.query('INSERT INTO additem (item_name, quantity, date, supplier_name) VALUES (?, ?, CURRENT_TIMESTAMP(), ?)', [item_name, parsedQuantity, supplier_name], (err, result) => {
+//                 if (err) throw err;
+//                 res.send('Item added successfully');
+//             });
+//         }
+//     });
+// });
 
 app.post('/additem', (req, res) => {
     const { item_id, item_name, quantity, supplier_name } = req.body;
@@ -389,7 +398,7 @@ app.get('/stocks', (req, res) => {
 })
 
 app.get('/history', (req, res) => {
-    const { product_id } = req.body;
+
 
     connection.query('SELECT * FROM history', (error, results) => {
         if (error) {
@@ -403,7 +412,7 @@ app.get('/history', (req, res) => {
 app.get('/profile', verifyToken, (req, res) => {
     const { userId } = req.body;
 
-    connection.query('SELECT fullName FROM login WHERE userId = ?', userId, (error, results) => {
+    connection.query('SELECT firstName FROM login WHERE userId = ?', userId, (error, results) => {
         if (error) {
             console.error('Error fetching name from database:', error.stack);
             return res.status(500).json({ error: 'Internal server error' });
@@ -412,8 +421,8 @@ app.get('/profile', verifyToken, (req, res) => {
             return res.status(404).json({ error: 'User not found' });
         }
 
-        const fullName = results[0].fullName;
-        res.json({ fullName });
+        const firstName = results[0].firstName;
+        res.json({ firstName });
         res.json({ message: 'Token is verified' });
 
     });
@@ -577,7 +586,6 @@ function sendEmail(email, requestMaterial) {
 }
 
 app.get('/raised-request', (req, res) => {
-    const { name } = req.body;
 
 
     connection.query("SELECT * FROM requestmaterial", (error, results) => {
@@ -668,9 +676,9 @@ app.post('/forgot-password', (req, res) => {
 });
 
 app.post('/add-po', (req, res) => {
-    const { poCode, supplier, items, unit, quantity, datecreated, status, action } = req.body;
+    const { poCode, supplier, items, unit, quantity, datecreated, status } = req.body;
 
-    if (!poCode || !supplier || !items || !unit || !quantity || !datecreated || !status || !action) {
+    if (!poCode || !supplier || !items || !unit || !quantity || !datecreated || !status) {
         return res.status(400).json({ error: 'Missing required fields (poCode, supplier)' });
     }
 
@@ -681,8 +689,7 @@ app.post('/add-po', (req, res) => {
         unit,
         quantity,
         datecreated,
-        status,
-        action
+        status
 
     };
 
@@ -697,7 +704,6 @@ app.post('/add-po', (req, res) => {
 })
 
 app.get('/purchase-order', (req, res) => {
-    const { id } = req.body;
     connection.query("SELECT * FROM polist", (error, results) => {
         if (error) {
             console.error('Error fetching itemrs from database ,error.stack');
@@ -903,6 +909,27 @@ app.get('/users', (req, res) => {
         }
         res.json({ users: results })
     })
+})
+
+app.post('/get-report', (req, res) => {
+    console.log(req.body);
+    const { in_out, site_details, product_name, from_date, to_date } = req.body;
+    console.log(in_out);
+    console.log(site_details);
+    console.log(product_name);
+    console.log(from_date);
+    console.log(to_date);
+
+    const query = ``
+
+    connection.query("SELECT * FROM history where site_details = ? AND product_name =? AND in_out = ? AND date BETWEEN ? and ?;",
+        [site_details, product_name, in_out, from_date, to_date], (error, results) => {
+            if (error) {
+                console.error('Error fetching items from database ');
+                return res.status(500).json({ error: "Internal server error" })
+            }
+            res.json(results)
+        })
 })
 
 
