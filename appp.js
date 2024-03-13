@@ -408,11 +408,10 @@ app.get('/history', (req, res) => {
         res.json({ items: results });
     });
 })
+app.get('/profile', (req, res) => {
+    const userId = req.headers['userid'];
 
-app.get('/profile', verifyToken, (req, res) => {
-    const { userId } = req.body;
-
-    connection.query('SELECT firstName FROM login WHERE userId = ?', userId, (error, results) => {
+    connection.query('SELECT firstName FROM login WHERE userId = ?', [userId], (error, results) => {
         if (error) {
             console.error('Error fetching name from database:', error.stack);
             return res.status(500).json({ error: 'Internal server error' });
@@ -423,10 +422,10 @@ app.get('/profile', verifyToken, (req, res) => {
 
         const firstName = results[0].firstName;
         res.json({ firstName });
-        res.json({ message: 'Token is verified' });
-
+        
     });
 })
+
 
 
 app.post('/change-password', (req, res) => {
@@ -642,14 +641,14 @@ app.post('/forgot-password', (req, res) => {
         port: 465,
         secure: true,
         auth: {
-            user: 'Interns@buildint.co',
-            pass: 'Interns@2024'
+            user: 'trainee.software@buildint.co',
+            pass: 'BuildINT@123'
         }
     });
 
     // Email message
     const mailOptions = {
-        from: 'Interns@buildint.co',
+        from: 'trainee.software@buildint.co',
         to: email,
         subject: 'Your OTP for verification',
         text: `Your OTP is: ${otp}`
@@ -741,7 +740,7 @@ app.post('/add-supplier', (req, res) => {
 })
 
 app.get('/supplier-list', (req, res) => {
-    const { id } = req.body;
+
     connection.query("SELECT * FROM supplierlist", (error, results) => {
         if (error) {
             console.error('Error fetching itemrs from database ,error.stack');
