@@ -408,7 +408,7 @@ app.get('/history', (req, res) => {
         res.json({ items: results });
     });
 })
-app.get('/profile', (req, res) => {
+app.get('/profile',verifyToken, (req, res) => {
     const userId = req.headers['userid'];
 
     connection.query('SELECT firstName FROM login WHERE userId = ?', [userId], (error, results) => {
