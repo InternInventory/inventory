@@ -408,8 +408,8 @@ app.get('/history', (req, res) => {
         res.json({ items: results });
     });
 })
-app.get('/profile/:userId', (req, res) => {
-    const userId = req.params.userId;
+app.get('/profile', verifyToken, (req, res) => {
+    const userId = req.decoded.userId;
 
     connection.query('SELECT firstName FROM login WHERE userId = ?', [userId], (error, results) => {
         if (error) {
@@ -781,7 +781,8 @@ app.get('/inwards', (req, res) => {
             console.error('Error fetching itemrs from database ,error.stack');
             return res.status(500).json({ error: "Internal server error" })
         }
-        res.json({ items: results });
+        res.send(results);
+
     });
 })
 
