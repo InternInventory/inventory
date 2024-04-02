@@ -807,7 +807,6 @@ function generatePDF(data) {
             resolve(pdfData);
         });
         data.forEach(row => {
-
             doc.rect(50, 50, 514, 700).stroke();
             // doc.image('./C:/Users/broto/Downloads/BuildINT.png', 207, 55, { width: 200, height: 50 });
             doc.font('Times-Bold').fontSize(14).text('DELIVERY CHALLAN', 55, 115, { width: 504, height: 35, align: 'left' })
