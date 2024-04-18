@@ -59,7 +59,7 @@ app.post('/login', async (req, res) => {
     const { username, password } = req.body;
 
     // Check if the user exists
-    connection.query('SELECT * FROM login WHERE username = ?', [username], async (err, results) => {
+    connection.query('SELECT * FROM users WHERE username = ?', [username], async (err, results) => {
         if (err) {
             console.log(err)
             res.status(500).json({ error: 'Internal server error' });
@@ -86,7 +86,7 @@ app.post('/login', async (req, res) => {
             // Token expires in 1 hour
         });
         // Update the database with the JWT token
-        connection.query('UPDATE login SET token = ? WHERE username = ?', [token, user.username], (updateErr, updateResults) => {
+        connection.query('UPDATE users SET token = ? WHERE username = ?', [token, user.username], (updateErr, updateResults) => {
             if (updateErr) {
                 console.log(updateErr);
                 res.status(500).json({ error: 'Failed to update JWT token in the database' });
@@ -101,7 +101,7 @@ app.post('/login', async (req, res) => {
     });
 });
 
-/*app.post('/hash_password', async (req, res) => {
+app.post('/hash_password', async (req, res) => {
     try {
         // Get the password from the request body
         const { username, password } = req.body;
@@ -136,7 +136,7 @@ app.post('/login', async (req, res) => {
         res.status(500).json({ error: 'Internal server error' });
     }
 });
-*/
+
 
 app.post('/add-items', verifyToken, (req, res) => {
     const { item_name, quantity, supplier_name } = req.body;
@@ -959,6 +959,107 @@ app.post('/get-report', (req, res) => {
             res.json(results)
         })
 })
+
+app.get('/status-active', (req, res) => {
+
+    connection.query("SELECT COUNT(status) FROM polist WHERE status = 'active'", (error, results) => {
+        if (error) {
+            console.error('Error fetching itemrs from database ,error.stack');
+            return res.status(500).json({ error: "Internal server error" })
+        }
+        res.send(results);
+
+    });
+})
+
+app.get('/status-pending', (req, res) => {
+
+    connection.query("SELECT COUNT(status) FROM polist WHERE status = 'pending'", (error, results) => {
+        if (error) {
+            console.error('Error fetching itemrs from database ,error.stack');
+            return res.status(500).json({ error: "Internal server error" })
+        }
+        res.send(results);
+
+    });
+})
+
+app.get('/req-status', (req, res) => {
+
+    connection.query("SELECT COUNT(approve_status) FROM requestmaterial WHERE approve_status = 'pending'", (error, results) => {
+        if (error) {
+            console.error('Error fetching itemrs from database ,error.stack');
+            return res.status(500).json({ error: "Internal server error" })
+        }
+        res.send(results);
+
+    });
+})
+
+//Added on 17.04.2024
+//add project
+app.post('/add-project', (req, res) => {
+    const { name, created_by, updated_by } = req.body;
+
+    // Check if all required fields are present
+    if (!name || !created_by) {
+        res.status(400).json({ error: 'Missing required fields' });
+        return;
+    }
+
+    const query = `INSERT INTO projects (name, created_by) VALUES (?, ?)`;
+
+    // Execute the query
+    connection.query(query, [name, created_by], (error, results) => {
+        if (error) {
+            console.error('Error executing query:', error);
+            res.status(500).json({ error: 'Internal server error' });
+            return;
+        }
+
+        // Data inserted successfully
+        res.status(201).json({ message: 'Record inserted successfully' });
+    });
+});
+
+
+//to see projects for drop down on send material
+app.get('/projects', (req, res) => {
+    connection.query("SELECT id,name FROM projects", (error, results) => {
+        if (error) {
+            console.error('Error fetching itemrs from database ,error.stack');
+            return res.status(500).json({ error: "Internal server error" })
+        }
+        res.json({ items: results });
+    });
+})
+
+//send items
+app.put('/update-record', (req, res) => {
+    const { project_name, cost, receiver_name, receiver_contact, location, updated_date, chalan_id, description } = req.body;
+    const id = req.params.id;
+    const item_id = 1
+
+    // Create a SQL query to update data in the database
+    const query = `UPDATE stocks SET item_status = ?,project_name=?, cost=?, receiver_name=?, receiver_contact=?, location=?, updated_date=?, chalan_id=?, description=? WHERE id=?`;
+
+    // Execute the query
+    connection.query(query, [item_id, project_name, cost, receiver_name, receiver_contact, location, updated_date, chalan_id, description, id], (error, results) => {
+        if (error) {
+            console.error('Error executing query:', error);
+            res.status(500).json({ error: 'Internal server error' });
+            return;
+        }
+
+        if (results.affectedRows === 0) {
+            res.status(404).json({ error: 'Record not found' });
+            return;
+        }
+
+        // Data updated successfully
+        res.status(200).json({ message: 'Record updated successfully' });
+    });
+});
 
 
 const port = process.env.PORT || 5050;
