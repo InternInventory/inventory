@@ -1034,31 +1034,87 @@ app.get('/projects', (req, res) => {
     });
 })
 
-//send items
-app.put('/update-record', (req, res) => {
-    const { project_name, cost, receiver_name, receiver_contact, location, updated_date, chalan_id, description } = req.body;
-    const id = req.params.id;
-    const item_id = 1
+//Added on 18.04.2024
+// To update database for sent materials
+app.post("/update-record/:id", (req, res) => {
+    const {
+        id,
+        project_name,
+        cost,
+        receiver_name,
+        receiver_contact,
+        location,
+        updated_date,
+        chalan_id,
+        description,
+        mod,
+    } = req.body;
 
-    // Create a SQL query to update data in the database
-    const query = `UPDATE stocks SET item_status = ?,project_name=?, cost=?, receiver_name=?, receiver_contact=?, location=?, updated_date=?, chalan_id=?, description=? WHERE id=?`;
+    // const id = req.params.id;
 
-    // Execute the query
-    connection.query(query, [item_id, project_name, cost, receiver_name, receiver_contact, location, updated_date, chalan_id, description, id], (error, results) => {
+    const item_status = 1;
+    let values = [
+        item_status,
+        project_name,
+        cost,
+        receiver_name,
+        receiver_contact,
+        location,
+        updated_date,
+        chalan_id,
+        description,
+        mod,
+        id,
+    ];
+
+    const query = `UPDATE stocks SET item_status = ?, project_name=?, cost=?, reciever_name=?, reciever_contact=?, Location=?, updated_date=?, chalan_id=?, description=?, \`mod\`=? WHERE id=?`;
+
+    connection.query(query, values, (error, results) => {
         if (error) {
-            console.error('Error executing query:', error);
-            res.status(500).json({ error: 'Internal server error' });
+            console.error("Error executing query:", error);
+            res.status(500).json({ error: "Internal server error" });
             return;
         }
 
         if (results.affectedRows === 0) {
-            res.status(404).json({ error: 'Record not found' });
+            res.status(404).json({ error: "Record not found" });
             return;
         }
 
         // Data updated successfully
-        res.status(200).json({ message: 'Record updated successfully' });
+        res.status(200).json({ message: "Record updated successfully" });
     });
+});
+
+
+// For adding items into stocks table (add-item)
+app.post("/api/add-item", (req, res) => {
+    const { item_id, item_name, added_date, supplier_id } = req.body;
+
+    // Check if all required fields are present
+    if (!item_id || !item_name || !added_date || !supplier_id) {
+        res.status(400).json({ error: "Missing required fields" });
+        return;
+    }
+
+    // Create a SQL query to insert data into the database
+    const query = `INSERT INTO stocks (item_id, item_name, added_date, supplier_id ) VALUES (?, ?, ?, ?)`;
+
+    // Execute the query
+    connection.query(
+        query,
+        [item_id, item_name, added_date, supplier_id],
+        (error, results) => {
+            if (error) {
+                console.error("Error executing query:", error);
+                res.status(500).json({ error: "Internal server error" });
+                return;
+            }
+
+            // Data inserted successfully
+            res.status(201).json({ message: "Item inserted successfully" });
+        }
+    );
 });
 
 
