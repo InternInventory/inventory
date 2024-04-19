@@ -54,7 +54,7 @@ function verifyToken(req, res, next) {
     });
 }
 
-// Routes
+// Routes 
 app.post('/login', async (req, res) => {
     const { username, password } = req.body;
 
