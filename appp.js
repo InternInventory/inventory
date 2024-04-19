@@ -119,7 +119,7 @@ app.post('/hash_password', async (req, res) => {
         //const user = results[0];
 
         // Update the database with the hashed password
-        connection.query('UPDATE login SET password = ? WHERE username = ?', [hashedPassword, username], (updateErr, updateResults) => {
+        connection.query('UPDATE users SET password = ? WHERE username = ?', [hashedPassword, username], (updateErr, updateResults) => {
             if (updateErr) {
                 console.log(updateErr);
                 return res.status(500).json({ error: 'Failed to update hashed password in the database' });
@@ -674,35 +674,33 @@ app.post('/forgot-password', (req, res) => {
 });
 
 app.post('/add-po', (req, res) => {
-    const { poCode, supplier, items, unit, quantity, datecreated, status } = req.body;
+    const { po_code, supplier_id, item_id, quantity, status } = req.body;
 
-    if (!poCode || !supplier || !items || !unit || !quantity || !datecreated || !status) {
+    if (!po_code || !supplier_id || !item_id || !quantity || !status) {
         return res.status(400).json({ error: 'Missing required fields' });
     }
 
-    const polist = {
-        poCode,
-        supplier,
-        items,
-        unit,
+    const po_list = {
+        po_code,
+        supplier_id,
+        item_id,
         quantity,
-        datecreated,
         status
 
     };
 
-    connection.query('INSERT INTO polist SET ?', polist, (error, results) => {
+    connection.query('INSERT INTO po_list SET ?', po_list, (error, results) => {
         if (error) {
             console.error('Error inserting item into database: ' + error.stack);
             return res.status(500).json({ error: 'Internal server error' });
         }
         console.log('Item added to database with ID: ' + results.insertId);
-        res.status(201).json({ message: 'P.O. added successfully', item: polist });
+        res.status(201).json({ message: 'P.O. added successfully', item: po_list });
     });
 })
 
 app.get('/purchase-order', (req, res) => {
-    connection.query("SELECT * FROM polist", (error, results) => {
+    connection.query("SELECT * FROM po_list", (error, results) => {
         if (error) {
             console.error('Error fetching itemrs from database ,error.stack');
             return res.status(500).json({ error: "Internal server error" })
@@ -712,35 +710,34 @@ app.get('/purchase-order', (req, res) => {
 })
 
 app.post('/add-supplier', (req, res) => {
-    const { name, contact, address, date, status, contact_person } = req.body;
+    const { name, contact_number, address, status, contact_person } = req.body;
 
-    if (!name || !contact || !address || !contact_person || !date || !status) {
+    if (!name || !contact_number || !address || !contact_person || !status) {
         return res.status(400).json({ error: 'Missing required fields (name,contact)' });
     }
 
-    const supplierlist = {
+    const suppliers = {
         name,
-        contact,
+        contact_number,
         address,
-        date,
         status,
         contact_person
 
     };
 
-    connection.query('INSERT INTO supplierlist SET ?', supplierlist, (error, results) => {
+    connection.query('INSERT INTO suppliers SET ?', suppliers, (error, results) => {
         if (error) {
             console.error('Error inserting item into database: ' + error.stack);
             return res.status(500).json({ error: 'Internal server error' });
         }
         console.log('Item added to database with ID: ' + results.insertId);
-        res.status(201).json({ message: 'New supplier added successfully', item: supplierlist });
+        res.status(201).json({ message: 'New supplier added successfully', item: suppliers });
     });
 })
 
 app.get('/supplier-list', (req, res) => {
 
-    connection.query("SELECT * FROM supplierlist", (error, results) => {
+    connection.query("SELECT * FROM suppliers", (error, results) => {
         if (error) {
             console.error('Error fetching itemrs from database ,error.stack');
             return res.status(500).json({ error: "Internal server error" })
