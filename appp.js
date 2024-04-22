@@ -385,17 +385,17 @@ app.post('/create-user', (req, res) => {
 
 })
 
-app.get('/stocks', (req, res) => {
+// app.get('/stocks', (req, res) => {
 
 
-    connection.query('SELECT * FROM additem', (error, results) => {
-        if (error) {
-            console.error('Error fetching items from database:', error.stack);
-            return res.status(500).json({ error: 'Internal server error' });
-        }
-        res.json({ items: results });
-    });
-})
+//     connection.query('SELECT * FROM additem', (error, results) => {
+//         if (error) {
+//             console.error('Error fetching items from database:', error.stack);
+//             return res.status(500).json({ error: 'Internal server error' });
+//         }
+//         res.json({ items: results });
+//     });
+// })
 
 app.get('/history', (req, res) => {
 
@@ -773,7 +773,7 @@ app.post('/send-material', (req, res) => {
 
 app.get('/inwards', (req, res) => {
 
-    connection.query("SELECT SUM(quantity) as inwards FROM additem", (error, results) => {
+    connection.query("SELECT count(item_status) as Inwards FROM inventory.stocks;", (error, results) => {
         if (error) {
             console.error('Error fetching itemrs from database ,error.stack');
             return res.status(500).json({ error: "Internal server error" })
@@ -785,7 +785,7 @@ app.get('/inwards', (req, res) => {
 
 app.get('/outwards', (req, res) => {
 
-    connection.query("SELECT SUM(quantity) as outwords FROM sendmaterial", (error, results) => {
+    connection.query("SELECT count(item_status) as Outward FROM inventory.stocks WHERE item_status = 1;", (error, results) => {
         if (error) {
             console.error('Error fetching items from database ,error.stack');
             return res.status(500).json({ error: "Internal server error" })
@@ -1033,7 +1033,7 @@ app.get('/projects', (req, res) => {
 
 //Added on 18.04.2024
 // To update database for sent materials
-app.post("/update-record/:id", (req, res) => {
+app.post("/send-material-ok", (req, res) => {
     const {
         id,
         project_name,
@@ -1041,7 +1041,6 @@ app.post("/update-record/:id", (req, res) => {
         receiver_name,
         receiver_contact,
         location,
-        updated_date,
         chalan_id,
         description,
         mod,
@@ -1057,14 +1056,13 @@ app.post("/update-record/:id", (req, res) => {
         receiver_name,
         receiver_contact,
         location,
-        updated_date,
         chalan_id,
         description,
         mod,
         id,
     ];
 
-    const query = `UPDATE stocks SET item_status = ?, project_name=?, cost=?, reciever_name=?, reciever_contact=?, Location=?, updated_date=?, chalan_id=?, description=?, \`mod\`=? WHERE id=?`;
+    const query = `UPDATE stocks SET item_status = ?, project_name=?, cost=?, reciever_name=?, reciever_contact=?, Location=?, chalan_id=?, description=?, \`mod\`=? WHERE id=?`;
 
     connection.query(query, values, (error, results) => {
         if (error) {
@@ -1086,21 +1084,21 @@ app.post("/update-record/:id", (req, res) => {
 
 // For adding items into stocks table (add-item)
 app.post("/api/add-item", (req, res) => {
-    const { item_id, item_name, added_date, supplier_id } = req.body;
+    const { item_id, item_name, supplier_id } = req.body;
 
     // Check if all required fields are present
-    if (!item_id || !item_name || !added_date || !supplier_id) {
+    if (!item_id || !item_name || !supplier_id) {
         res.status(400).json({ error: "Missing required fields" });
         return;
     }
 
     // Create a SQL query to insert data into the database
-    const query = `INSERT INTO stocks (item_id, item_name, added_date, supplier_id ) VALUES (?, ?, ?, ?)`;
+    const query = `INSERT INTO stocks (item_id, item_name, supplier_id ) VALUES (?, ?, ?)`;
 
     // Execute the query
     connection.query(
         query,
-        [item_id, item_name, added_date, supplier_id],
+        [item_id, item_name, supplier_id],
         (error, results) => {
             if (error) {
                 console.error("Error executing query:", error);
@@ -1114,6 +1112,25 @@ app.post("/api/add-item", (req, res) => {
     );
 });
 
+app.get("/supplier-dropdown", (req, res) => {
+    connection.query("SELECT distinct name FROM suppliers", (error, results) => {
+        if (error) {
+            console.error('Error fetching items from database ');
+            return res.status(500).json({ error: "Internal server error" })
+        }
+        res.json({ users: results })
+    })
+})
+
+app.get("/item-dropdown", (req, res) => {
+    connection.query("SELECT distinct item_name FROM stocks", (error, results) => {
+        if (error) {
+            console.error('Error fetching items from database ');
+            return res.status(500).json({ error: "Internal server error" })
+        }
+        res.json({ users: results })
+    })
+})
 
 const port = process.env.PORT || 5050;
 app.listen(port, () => {
