@@ -220,9 +220,9 @@ app.post('/additem', (req, res) => {
 });
 
 app.get('/added-item-list', (req, res) => {
-    const { item_name } = req.body;
+    //const { item_name } = req.body;
 
-    connection.query('SELECT * FROM additem', (error, results) => {
+    connection.query('SELECT item_name, supplier_id, added_date FROM stocks ORDER BY added_date desc', (error, results) => {
         if (error) {
             console.error('Error fetching items from database:', error.stack);
             return res.status(500).json({ error: 'Internal server error' });
@@ -231,61 +231,61 @@ app.get('/added-item-list', (req, res) => {
     });
 })
 
-app.post('/send-material1', (req, res) => {
-    const { project_name, site_id, quantity, receiver_name, location, date, mode_of_dispatch, item_id } = req.body;
-    console.log(req.body)
+// app.post('/send-material1', (req, res) => {
+//     const { project_name, site_id, quantity, receiver_name, location, date, mode_of_dispatch, item_id } = req.body;
+//     console.log(req.body)
 
-    if (!project_name || !site_id || !quantity || !receiver_name || !location || !date || !mode_of_dispatch || !item_id) {
-        return res.status(400).json({ error: 'Missing required fields (name, quantity)' });
-    }
+//     if (!project_name || !site_id || !quantity || !receiver_name || !location || !date || !mode_of_dispatch || !item_id) {
+//         return res.status(400).json({ error: 'Missing required fields (name, quantity)' });
+//     }
 
-    // Check if site_id exists in additem table
-    connection.query('SELECT * FROM additem WHERE item_id = ?', [item_id], (error, results) => {
-        if (error) {
-            console.error('Error querying database: ' + error.stack);
-            return res.status(500).json({ error: 'Internal server error' });
-        }
-        if (results.length === 0) {
-            return res.status(404).json({ error: 'Site ID not found in additem table' });
-        }
+//     // Check if site_id exists in additem table
+//     connection.query('SELECT * FROM additem WHERE item_id = ?', [item_id], (error, results) => {
+//         if (error) {
+//             console.error('Error querying database: ' + error.stack);
+//             return res.status(500).json({ error: 'Internal server error' });
+//         }
+//         if (results.length === 0) {
+//             return res.status(404).json({ error: 'Site ID not found in additem table' });
+//         }
 
-        const item = results[0]; // Assuming there's only one match
-        if (item.quantity < quantity) {
-            return res.status(400).json({ error: 'Insufficient quantity in additem table' });
-        }
+//         const item = results[0]; // Assuming there's only one match
+//         if (item.quantity < quantity) {
+//             return res.status(400).json({ error: 'Insufficient quantity in additem table' });
+//         }
 
-        // Subtract quantity from additem table
-        const remainingQuantity = item.quantity - quantity;
-        connection.query('UPDATE additem SET quantity = ? WHERE item_id = ?', [remainingQuantity, item_id], (updateError, updateResults) => {
-            if (updateError) {
-                console.error('Error updating quantity in additem table: ' + updateError.stack);
-                return res.status(500).json({ error: 'Internal server error' });
-            }
+//         // Subtract quantity from additem table
+//         const remainingQuantity = item.quantity - quantity;
+//         connection.query('UPDATE additem SET quantity = ? WHERE item_id = ?', [remainingQuantity, item_id], (updateError, updateResults) => {
+//             if (updateError) {
+//                 console.error('Error updating quantity in additem table: ' + updateError.stack);
+//                 return res.status(500).json({ error: 'Internal server error' });
+//             }
 
-            const sendMaterial = {
-                project_name,
-                site_id,
-                quantity,
-                receiver_name,
-                location,
-                date,
-                mode_of_dispatch,
-                item_id
-            };
+//             const sendMaterial = {
+//                 project_name,
+//                 site_id,
+//                 quantity,
+//                 receiver_name,
+//                 location,
+//                 date,
+//                 mode_of_dispatch,
+//                 item_id
+//             };
 
-            // Insert sendMaterial into sendmaterial table
-            connection.query('INSERT INTO sendmaterial SET ?', sendMaterial, (insertError, insertResults) => {
-                if (insertError) {
-                    console.error('Error inserting item into sendmaterial table: ' + insertError.stack);
-                    return res.status(500).json({ error: 'Internal server error' });
-                }
+//             // Insert sendMaterial into sendmaterial table
+//             connection.query('INSERT INTO sendmaterial SET ?', sendMaterial, (insertError, insertResults) => {
+//                 if (insertError) {
+//                     console.error('Error inserting item into sendmaterial table: ' + insertError.stack);
+//                     return res.status(500).json({ error: 'Internal server error' });
+//                 }
 
-                console.log('Item added to database with ID: ' + insertResults.insertId);
-                res.status(201).json({ message: 'Material sent successfully', item: sendMaterial });
-            });
-        });
-    });
-});
+//                 console.log('Item added to database with ID: ' + insertResults.insertId);
+//                 res.status(201).json({ message: 'Material sent successfully', item: sendMaterial });
+//             });
+//         });
+//     });
+// });
 
 
 // app.post('/send-material', (req, res) => {
@@ -903,7 +903,7 @@ function generatePDF(data) {
 app.get('/send-material-history', (req, res) => {
 
 
-    connection.query("SELECT * FROM sendmaterial", (error, results) => {
+    connection.query("SELECT * FROM stocks WHERE item_status = 1", (error, results) => {
         if (error) {
             console.error('Error fetching items from database ');
             return res.status(500).json({ error: "Internal server error" })
@@ -1131,6 +1131,16 @@ app.get("/item-dropdown", (req, res) => {
         res.json({ users: results })
     })
 })
+
+app.get("/stock-count", (req, res) => {
+    connection.query("SELECT distinct item_name, COUNT(item_name) FROM stocks GROUP BY item_name", (error, results) => {
+        if (error) {
+            console.error('Error fetching items from database ');
+            return res.status(500).json({ error: "Internal server error" })
+        }
+        res.json({ results })
+    })
+});
 
 const port = process.env.PORT || 5050;
 app.listen(port, () => {
