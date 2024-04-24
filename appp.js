@@ -713,7 +713,7 @@ app.post('/add-supplier', (req, res) => {
     const { name, contact_number, address, status, contact_person } = req.body;
 
     if (!name || !contact_number || !address || !contact_person || !status) {
-        return res.status(400).json({ error: 'Missing required fields (name,contact)' });
+        return res.status(400).json({ error: 'Missing required fields' });
     }
 
     const suppliers = {
@@ -1133,7 +1133,7 @@ app.get("/item-dropdown", (req, res) => {
 })
 
 app.get("/stock-count", (req, res) => {
-    connection.query("SELECT distinct item_name, COUNT(item_name) FROM stocks GROUP BY item_name", (error, results) => {
+    connection.query("SELECT distinct item_name, COUNT(item_name) AS quantity FROM stocks GROUP BY item_name;", (error, results) => {
         if (error) {
             console.error('Error fetching items from database ');
             return res.status(500).json({ error: "Internal server error" })
