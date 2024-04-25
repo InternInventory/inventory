@@ -385,17 +385,17 @@ app.post('/create-user', (req, res) => {
 
 })
 
-// app.get('/stocks', (req, res) => {
+app.get('/stocks', (req, res) => {
 
 
-//     connection.query('SELECT * FROM additem', (error, results) => {
-//         if (error) {
-//             console.error('Error fetching items from database:', error.stack);
-//             return res.status(500).json({ error: 'Internal server error' });
-//         }
-//         res.json({ items: results });
-//     });
-// })
+    connection.query('SELECT * FROM stocks WHERE item_status = 1 ORDER BY added_date desc', (error, results) => {
+        if (error) {
+            console.error('Error fetching items from database:', error.stack);
+            return res.status(500).json({ error: 'Internal server error' });
+        }
+        res.json({ items: results });
+    });
+})
 
 app.get('/history', (req, res) => {
 
@@ -673,6 +673,7 @@ app.post('/forgot-password', (req, res) => {
     });
 });
 
+//remove item_id from code and database
 app.post('/add-po', (req, res) => {
     const { po_code, supplier_id, item_id, quantity, status } = req.body;
 
@@ -1113,7 +1114,7 @@ app.post("/api/add-item", (req, res) => {
 });
 
 app.get("/supplier-dropdown", (req, res) => {
-    connection.query("SELECT distinct name FROM suppliers", (error, results) => {
+    connection.query("SELECT distinct name, id FROM suppliers", (error, results) => {
         if (error) {
             console.error('Error fetching items from database ');
             return res.status(500).json({ error: "Internal server error" })
