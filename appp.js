@@ -138,28 +138,28 @@ app.post('/hash_password', async (req, res) => {
 });
 
 
-app.post('/add-items', verifyToken, (req, res) => {
-    const { item_name, quantity, supplier_name } = req.body;
+// app.post('/add-items', verifyToken, (req, res) => {
+//     const { item_name, quantity, supplier_name } = req.body;
 
-    if (!item_name || !quantity || !supplier_name) {
-        return res.status(400).json({ error: 'Missing required fields (name, quantity)' });
-    }
+//     if (!item_name || !quantity || !supplier_name) {
+//         return res.status(400).json({ error: 'Missing required fields (name, quantity)' });
+//     }
 
-    const newItem = {
-        item_name,
-        quantity,
-        supplier_name
-    };
+//     const newItem = {
+//         item_name,
+//         quantity,
+//         supplier_name
+//     };
 
-    connection.query('INSERT INTO additem SET ?', newItem, (error, results) => {
-        if (error) {
-            console.error('Error inserting item into database: ' + error.stack);
-            return res.status(500).json({ error: 'Internal server error' });
-        }
-        console.log('Item added to database with ID: ' + results.insertId);
-        res.status(201).json({ message: 'Item added successfully', item: newItem });
-    });
-})
+//     connection.query('INSERT INTO additem SET ?', newItem, (error, results) => {
+//         if (error) {
+//             console.error('Error inserting item into database: ' + error.stack);
+//             return res.status(500).json({ error: 'Internal server error' });
+//         }
+//         console.log('Item added to database with ID: ' + results.insertId);
+//         res.status(201).json({ message: 'Item added successfully', item: newItem });
+//     });
+// })
 
 // app.post('/additem', (req, res) => {
 //     const { item_id, item_name, quantity, supplier_name } = req.body;
@@ -190,34 +190,34 @@ app.post('/add-items', verifyToken, (req, res) => {
 //     });
 // });
 
-app.post('/additem', (req, res) => {
-    const { item_id, item_name, quantity, supplier_name } = req.body;
+// app.post('/additem', (req, res) => {
+//     const { item_id, item_name, quantity, supplier_name } = req.body;
 
-    // Ensure quantity is treated as an integer
-    const parsedQuantity = parseInt(quantity);
+//     // Ensure quantity is treated as an integer
+//     const parsedQuantity = parseInt(quantity);
 
-    // Check if item exists
-    connection.query('SELECT * FROM additem WHERE item_name = ?', [item_name], (error, results) => {
-        if (error) throw error;
+//     // Check if item exists
+//     connection.query('SELECT * FROM additem WHERE item_name = ?', [item_name], (error, results) => {
+//         if (error) throw error;
 
 
-        if (sendmaterial.quantity < additem.quantity) {
-            // Update query to add quantity to existing quantity
-            const existingQuantity = results[0].quantity;
-            const updatedQuantity = existingQuantity + parsedQuantity;
-            connection.query('UPDATE additem SET quantity = ?, date = CURRENT_TIMESTAMP(), supplier_name = ? WHERE item_name = ?', [updatedQuantity, supplier_name, item_name], (err, result) => {
-                if (err) throw err;
-                res.send('Quantity updated successfully');
-            });
-        } else {
-            // Insert query
-            connection.query('INSERT INTO additem (item_name, quantity, date, supplier_name) VALUES (?, ?, CURRENT_TIMESTAMP(), ?)', [item_name, parsedQuantity, supplier_name], (err, result) => {
-                if (err) throw err;
-                res.send('Item added successfully');
-            });
-        }
-    });
-});
+//         if (sendmaterial.quantity < additem.quantity) {
+//             // Update query to add quantity to existing quantity
+//             const existingQuantity = results[0].quantity;
+//             const updatedQuantity = existingQuantity + parsedQuantity;
+//             connection.query('UPDATE additem SET quantity = ?, date = CURRENT_TIMESTAMP(), supplier_name = ? WHERE item_name = ?', [updatedQuantity, supplier_name, item_name], (err, result) => {
+//                 if (err) throw err;
+//                 res.send('Quantity updated successfully');
+//             });
+//         } else {
+//             // Insert query
+//             connection.query('INSERT INTO additem (item_name, quantity, date, supplier_name) VALUES (?, ?, CURRENT_TIMESTAMP(), ?)', [item_name, parsedQuantity, supplier_name], (err, result) => {
+//                 if (err) throw err;
+//                 res.send('Item added successfully');
+//             });
+//         }
+//     });
+// });
 
 app.get('/added-item-list', (req, res) => {
     //const { item_name } = req.body;
@@ -348,24 +348,26 @@ app.get('/added-item-list', (req, res) => {
 //     });
 // }
 
-app.post('/recieved-material', (req, res) => {
-    const { project_name, site_id, material, quantity, approved_by, challan_id, mode_of_dispatch } = req.body;
+// app.post('/recieved-material', (req, res) => {
+//     const { project_name, site_id, material, quantity, approved_by, challan_id, mode_of_dispatch } = req.body;
 
-    const sql = `INSERT INTO sendmaterial (project_name, siteid, material, quantity, approved_by, challan_id, mode_of_dispatch) VALUES (?, ?, ?, ?, ?, ?, ?)`;
-    const values = [project_name, site_id, material, quantity, approved_by, challan_id, mode_of_dispatch];
+//     const sql = `INSERT INTO sendmaterial (project_name, siteid, material, quantity, approved_by, challan_id, mode_of_dispatch) VALUES (?, ?, ?, ?, ?, ?, ?)`;
+//     const values = [project_name, site_id, material, quantity, approved_by, challan_id, mode_of_dispatch];
 
-    connection.query(sql, values, (err, result) => {
-        if (err) {
-            console.error('Error inserting data into send_material table: ' + err.stack);
-            res.status(500).send('Error inserting data into send_material table');
-            return;
-        }
-        console.log('Data inserted into send_material table');
-        // Update quantity in add_item table
-        updateQuantityInAddItem(material, quantity);
-        res.status(200).send('Data inserted into send_material table');
-    });
-});
+//     connection.query(sql, values, (err, result) => {
+//         if (err) {
+//             console.error('Error inserting data into send_material table: ' + err.stack);
+//             res.status(500).send('Error inserting data into send_material table');
+//             return;
+//         }
+//         console.log('Data inserted into send_material table');
+//         // Update quantity in add_item table
+//         updateQuantityInAddItem(material, quantity);
+//         res.status(200).send('Data inserted into send_material table');
+//     });
+// });
+
+
 
 // Function to update quantity in add_item table
 function updateQuantityInAddItem(material, quantity) {
@@ -383,10 +385,9 @@ function updateQuantityInAddItem(material, quantity) {
 
 app.post('/create-user', (req, res) => {
 
-})
+}) //Current NOT IN WORK
 
-app.get('/stocks', (req, res) => {
-
+app.get('/stocks', verifyToken, (req, res) => {
 
     connection.query('SELECT * FROM stocks WHERE item_status = 1 ORDER BY added_date desc', (error, results) => {
         if (error) {
@@ -397,8 +398,7 @@ app.get('/stocks', (req, res) => {
     });
 })
 
-app.get('/history', (req, res) => {
-
+app.get('/history', verifyToken, (req, res) => {
 
     connection.query('SELECT * FROM history', (error, results) => {
         if (error) {
@@ -408,6 +408,8 @@ app.get('/history', (req, res) => {
         res.json({ items: results });
     });
 })
+
+
 app.get('/profile', verifyToken, (req, res) => {
     const userId = req.decoded.userId;
 
@@ -428,7 +430,7 @@ app.get('/profile', verifyToken, (req, res) => {
 
 
 
-app.post('/change-password', (req, res) => {
+app.post('/change-password', verifyToken, (req, res) => {
     const { username, currentPassword, newPassword } = req.body;
 
     // Check if all required fields are provided
@@ -515,14 +517,14 @@ const transporter = nodemailer.createTransport({
     }
 });
 app.post('/request-material', (req, res) => {
-    const { name, site_name, material, quantity, userId } = req.body;
+    const { name, site_name, material, quantity, id } = req.body;
 
-    if (!name || !site_name || !material || !quantity || !userId) {
+    if (!name || !site_name || !material || !quantity || !id) {
         return res.status(400).json({ error: 'Missing required fields (name, site_name, material, date_of_request, quantity, user_id)' });
     }
 
     // Fetch user's email from login table
-    connection.query('SELECT email FROM login WHERE userId = ?', userId, (error, results) => {
+    connection.query('SELECT email FROM users WHERE id = ?', id, (error, results) => {
         if (error) {
             console.error('Error fetching user email: ' + error.stack);
             return res.status(500).json({ error: 'Internal server error' });
@@ -583,7 +585,7 @@ function sendEmail(email, requestMaterial) {
     });
 }
 
-app.get('/raised-request', (req, res) => {
+app.get('/raised-request', verifyToken, (req, res) => {
 
 
     connection.query("SELECT * FROM requestmaterial", (error, results) => {
@@ -595,7 +597,7 @@ app.get('/raised-request', (req, res) => {
     });
 })
 
-app.get('/approved-history', (req, res) => {
+app.get('/approved-history', verifyToken, (req, res) => {
     const { name } = req.body;
     connection.query("SELECT * FROM approvedhistory", (error, results) => {
         if (error) {
@@ -674,7 +676,7 @@ app.post('/forgot-password', (req, res) => {
 });
 
 //remove item_id from code and database
-app.post('/add-po', (req, res) => {
+app.post('/add-po', verifyToken, (req, res) => {
     const { po_code, supplier_id, item_id, quantity, status } = req.body;
 
     if (!po_code || !supplier_id || !item_id || !quantity || !status) {
@@ -700,7 +702,7 @@ app.post('/add-po', (req, res) => {
     });
 })
 
-app.get('/purchase-order', (req, res) => {
+app.get('/purchase-order', verifyToken, (req, res) => {
     connection.query("SELECT * FROM po_list", (error, results) => {
         if (error) {
             console.error('Error fetching itemrs from database ,error.stack');
@@ -710,7 +712,7 @@ app.get('/purchase-order', (req, res) => {
     });
 })
 
-app.post('/add-supplier', (req, res) => {
+app.post('/add-supplier', verifyToken, (req, res) => {
     const { name, contact_number, address, status, contact_person } = req.body;
 
     if (!name || !contact_number || !address || !contact_person || !status) {
@@ -736,7 +738,7 @@ app.post('/add-supplier', (req, res) => {
     });
 })
 
-app.get('/supplier-list', (req, res) => {
+app.get('/supplier-list', verifyToken, (req, res) => {
 
     connection.query("SELECT * FROM suppliers", (error, results) => {
         if (error) {
@@ -772,7 +774,7 @@ app.post('/send-material', (req, res) => {
     });
 });
 
-app.get('/inwards', (req, res) => {
+app.get('/inwards', verifyToken, (req, res) => {
 
     connection.query("SELECT count(item_status) as Inwards FROM inventory.stocks;", (error, results) => {
         if (error) {
@@ -784,7 +786,7 @@ app.get('/inwards', (req, res) => {
     });
 })
 
-app.get('/outwards', (req, res) => {
+app.get('/outwards', verifyToken, (req, res) => {
 
     connection.query("SELECT count(item_status) as Outward FROM inventory.stocks WHERE item_status = 1;", (error, results) => {
         if (error) {
@@ -863,7 +865,8 @@ function generatePDF(data) {
         doc.end();
 
     });
-} app.get('/generatepdf', async (req, res) => {
+}
+app.get('/generatepdf', verifyToken, async (req, res) => {
     try {
         const { sendmaterial } = req.query;
         const query = 'SELECT * FROM sendmaterial WHERE challan_id = ?';
@@ -901,7 +904,7 @@ function generatePDF(data) {
     }
 });
 
-app.get('/send-material-history', (req, res) => {
+app.get('/send-material-history', verifyToken, (req, res) => {
 
 
     connection.query("SELECT * FROM stocks WHERE item_status = 1", (error, results) => {
@@ -913,7 +916,7 @@ app.get('/send-material-history', (req, res) => {
     })
 })
 
-app.get('/out-of-stock', (req, res) => {
+app.get('/out-of-stock', verifyToken, (req, res) => {
 
 
     connection.query("SELECT count(item_name) out_of_stock FROM inventory.additem where quantity = 0", (error, results) => {
@@ -925,7 +928,7 @@ app.get('/out-of-stock', (req, res) => {
     })
 })
 
-app.get('/users', (req, res) => {
+app.get('/users', verifyToken, (req, res) => {
 
 
     connection.query("SELECT count(*) as users FROM inventory.login", (error, results) => {
@@ -937,7 +940,7 @@ app.get('/users', (req, res) => {
     })
 })
 
-app.post('/get-report', (req, res) => {
+app.post('/get-report', verifyToken, (req, res) => {
     console.log(req.body);
     const { in_out, site_details, product_name, from_date, to_date } = req.body;
     console.log(in_out);
@@ -958,7 +961,7 @@ app.post('/get-report', (req, res) => {
         })
 })
 
-app.get('/status-active', (req, res) => {
+app.get('/status-active', verifyToken, (req, res) => {
 
     connection.query("SELECT COUNT(status) FROM polist WHERE status = 'active'", (error, results) => {
         if (error) {
@@ -970,7 +973,7 @@ app.get('/status-active', (req, res) => {
     });
 })
 
-app.get('/status-pending', (req, res) => {
+app.get('/status-pending', verifyToken, (req, res) => {
 
     connection.query("SELECT COUNT(status) FROM polist WHERE status = 'pending'", (error, results) => {
         if (error) {
@@ -982,7 +985,7 @@ app.get('/status-pending', (req, res) => {
     });
 })
 
-app.get('/req-status', (req, res) => {
+app.get('/req-status', verifyToken, (req, res) => {
 
     connection.query("SELECT COUNT(approve_status) FROM requestmaterial WHERE approve_status = 'pending'", (error, results) => {
         if (error) {
@@ -996,7 +999,7 @@ app.get('/req-status', (req, res) => {
 
 //Added on 17.04.2024
 //add project
-app.post('/add-project', (req, res) => {
+app.post('/add-project', verifyToken, (req, res) => {
     const { name, created_by, updated_by } = req.body;
 
     // Check if all required fields are present
@@ -1022,7 +1025,7 @@ app.post('/add-project', (req, res) => {
 
 
 //to see projects for drop down on send material
-app.get('/projects', (req, res) => {
+app.get('/projects', verifyToken, (req, res) => {
     connection.query("SELECT id,name FROM projects", (error, results) => {
         if (error) {
             console.error('Error fetching itemrs from database ,error.stack');
@@ -1034,7 +1037,7 @@ app.get('/projects', (req, res) => {
 
 //Added on 18.04.2024
 // To update database for sent materials
-app.post("/send-material-ok", (req, res) => {
+app.post("/send-material-ok", verifyToken, (req, res) => {
     const {
         id,
         project_name,
@@ -1084,7 +1087,7 @@ app.post("/send-material-ok", (req, res) => {
 
 
 // For adding items into stocks table (add-item)
-app.post("/api/add-item", (req, res) => {
+app.post("/api/add-item", verifyToken, (req, res) => {
     const { item_id, item_name, supplier_id } = req.body;
 
     // Check if all required fields are present
@@ -1133,7 +1136,7 @@ app.get("/item-dropdown", (req, res) => {
     })
 })
 
-app.get("/stock-count", (req, res) => {
+app.get("/stock-count", verifyToken, (req, res) => {
     connection.query("SELECT distinct item_name, COUNT(item_name) AS quantity FROM stocks GROUP BY item_name;", (error, results) => {
         if (error) {
             console.error('Error fetching items from database ');
