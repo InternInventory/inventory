@@ -400,7 +400,7 @@ app.get('/stocks', verifyToken, (req, res) => {
 
 app.get('/history', verifyToken, (req, res) => {
 
-    connection.query('SELECT * FROM history', (error, results) => {
+    connection.query('SELECT * FROM stocks ORDER BY added_date DESC;', (error, results) => {
         if (error) {
             console.error('Error fetching items from database:', error.stack);
             return res.status(500).json({ error: 'Internal server error' });
@@ -703,7 +703,7 @@ app.post('/add-po', verifyToken, (req, res) => {
 })
 
 app.get('/purchase-order', verifyToken, (req, res) => {
-    connection.query("SELECT * FROM po_list", (error, results) => {
+    connection.query("SELECT * FROM po_list WHERE status = 1", (error, results) => {
         if (error) {
             console.error('Error fetching itemrs from database ,error.stack');
             return res.status(500).json({ error: "Internal server error" })
@@ -1145,6 +1145,50 @@ app.get("/stock-count", verifyToken, (req, res) => {
         res.json({ results })
     })
 });
+
+app.post("/delete-po", (req, res) => {
+    const { id } = req.body;
+
+
+    // Update status of query in database
+    const sql = `UPDATE po_list SET status = 2 WHERE id = ?`;
+
+    connection.query(sql, [id], (err, result) => {
+        if (err) {
+            console.error('Error updating query status: ', err);
+            return res.status(500).json({ message: 'Error updating query status' });
+        }
+
+        if (result.affectedRows === 0) {
+            return res.status(404).json({ message: 'Query not found' });
+        }
+
+        console.log('Query status updated successfully');
+        res.status(200).json({ message: 'Query status updated successfully' });
+    });
+})
+
+app.post("/accept-po", (req, res) => {
+    const { id } = req.body;
+
+
+    // Update status of query in database
+    const sql = `UPDATE po_list SET status = 3 WHERE id = ?`;
+
+    connection.query(sql, [id], (err, result) => {
+        if (err) {
+            console.error('Error updating query status: ', err);
+            return res.status(500).json({ message: 'Error updating query status' });
+        }
+
+        if (result.affectedRows === 0) {
+            return res.status(404).json({ message: 'Query not found' });
+        }
+
+        console.log('Query status updated successfully');
+        res.status(200).json({ message: 'Query status updated successfully' });
+    });
+})
 
 const port = process.env.PORT || 5050;
 app.listen(port, () => {
