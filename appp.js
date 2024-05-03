@@ -400,7 +400,7 @@ app.get('/stocks', verifyToken, (req, res) => {
 
 app.get('/history', verifyToken, (req, res) => {
 
-    connection.query('SELECT * FROM stocks ORDER BY added_date DESC;', (error, results) => {
+    connection.query('SELECT * FROM stocks ORDER BY added_date DESC', (error, results) => {
         if (error) {
             console.error('Error fetching items from database:', error.stack);
             return res.status(500).json({ error: 'Internal server error' });
@@ -740,7 +740,7 @@ app.post('/add-supplier', verifyToken, (req, res) => {
 
 app.get('/supplier-list', verifyToken, (req, res) => {
 
-    connection.query("SELECT * FROM suppliers", (error, results) => {
+    connection.query("SELECT * FROM suppliers WHERE status = 1", (error, results) => {
         if (error) {
             console.error('Error fetching itemrs from database ,error.stack');
             return res.status(500).json({ error: "Internal server error" })
@@ -1189,6 +1189,61 @@ app.post("/accept-po", (req, res) => {
         res.status(200).json({ message: 'Query status updated successfully' });
     });
 })
+
+app.post("/delete-supplier", (req, res) => {
+    const { id } = req.body;
+
+
+    // Update status of query in database
+    const sql = `UPDATE suppliers SET status = 2 WHERE id = ?`;
+
+    connection.query(sql, [id], (err, result) => {
+        if (err) {
+            console.error('Error updating query status: ', err);
+            return res.status(500).json({ message: 'Error updating query status' });
+        }
+
+        if (result.affectedRows === 0) {
+            return res.status(404).json({ message: 'Query not found' });
+        }
+
+        console.log('Query status updated successfully');
+        res.status(200).json({ message: 'Query status updated successfully' });
+    });
+})
+
+app.put('/toggle', (req, res) => {
+    // Extract the ID from the request body
+    const { id } = req.body;
+    // Ensure ID is provided
+    if (!id) {
+        return res.status(400).json({ error: 'ID is required in the request body' });
+    }
+
+    // Get the current status
+    connection.query('SELECT status FROM suppliers WHERE id = ? LIMIT 1', [id], (error, results) => {
+        if (error) {
+            console.error('Error getting current status:', error);
+            return res.status(500).json({ error: 'Internal Server Error' });
+        }
+
+        if (results.length === 0) {
+            return res.status(404).json({ error: 'Supplier not found' });
+        }
+
+        const currentStatus = results[0].status;
+        const newStatus = currentStatus === 1 ? 0 : 1;
+
+        // Toggle the status value
+        connection.query('UPDATE suppliers SET status = ? WHERE id = ?', [newStatus, id], (error) => {
+            if (error) {
+                console.error('Error updating status:', error);
+                return res.status(500).json({ error: 'Internal Server Error' });
+            }
+            res.json({ message: 'Status toggled successfully', status: newStatus });
+        });
+    });
+});
 
 const port = process.env.PORT || 5050;
 app.listen(port, () => {
