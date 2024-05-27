@@ -10,7 +10,9 @@ const fs = require('fs');       //To read file
 const dotenv = require('dotenv');
 dotenv.config();
 const app = express();
-
+const multer = require('multer');
+const excelToJson = require('convert-excel-to-json');
+const upload = multer({ dest: 'uploads/' });
 /// hellol
 
 app.use(bodyParser.json());
@@ -1241,6 +1243,58 @@ app.put('/toggle', (req, res) => {
                 return res.status(500).json({ error: 'Internal Server Error' });
             }
             res.json({ message: 'Status toggled successfully', status: newStatus });
+        });
+    });
+});
+
+app.post('/upload', upload.single('file'), (req, res) => {
+    // Check if file is provided
+    if (!req.file) {
+        return res.status(400).send('No file uploaded.');
+    }
+
+    // Convert Excel to JSON
+    const excelData = excelToJson({
+        sourceFile: req.file.path
+    });
+
+    // Extract data from the first sheet (assuming it's the only one)
+    const sheetData = excelData[Object.keys(excelData)[0]];
+
+    // Map Excel data to match column names
+    const mappedData = sheetData.map(row => ({
+        id: row.id,
+        item_id: row.item_id,
+        item_name: row.item_name,
+        added_date: row.added_date,
+        supplier_id: row.supplier_id,
+        item_status: row.item_status,
+        project_name: row.project_name,
+        cost: row.cost,
+        reciever_name: row.receiver_name,
+        reciever_contact: row.receiver_contact,
+        Location: row.Location,
+        updated_date: row.updated_date,
+        chalan_id: row.chalan_id,
+        description: row.description,
+        mod: row.mod
+    }));
+
+    // Insert mapped data into database
+    connection.getConnection((err, connection) => {
+        if (err) {
+            console.error('Error connecting to database:', err);
+            return res.status(500).send('Internal Server Error');
+        }
+
+        const sql = 'INSERT INTO stocks SET ?';
+        connection.query(sql, mappedData, (err, results) => {
+            connection.release(); // Release connection
+            if (err) {
+                console.error('Error inserting data into database:', err);
+                return res.status(500).send('Internal Server Error');
+            }
+            res.status(200).send('Data uploaded successfully.');
         });
     });
 });
