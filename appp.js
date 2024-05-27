@@ -432,56 +432,56 @@ app.get('/profile', verifyToken, (req, res) => {
 
 
 
-app.post('/change-password', verifyToken, (req, res) => {
-    const { username, currentPassword, newPassword } = req.body;
+// app.post('/change-password', verifyToken, (req, res) => {
+//     const { username, currentPassword, newPassword } = req.body;
 
-    // Check if all required fields are provided
-    if (!username || !currentPassword || !newPassword) {
-        return res.status(400).json({ error: 'Missing required fields' });
-    }
+//     // Check if all required fields are provided
+//     if (!username || !currentPassword || !newPassword) {
+//         return res.status(400).json({ error: 'Missing required fields' });
+//     }
 
-    // Fetch user from the database based on username
-    connection.query('SELECT * FROM login WHERE username = ?', username, (error, results, fields) => {
-        if (error) {
-            console.error('Error fetching user from database:', error.stack);
-            return res.status(500).json({ error: 'Internal server error' });
-        }
-        if (results.length === 0) {
-            return res.status(404).json({ error: 'User not found' });
-        }
+//     // Fetch user from the database based on username
+//     connection.query('SELECT * FROM login WHERE username = ?', username, (error, results, fields) => {
+//         if (error) {
+//             console.error('Error fetching user from database:', error.stack);
+//             return res.status(500).json({ error: 'Internal server error' });
+//         }
+//         if (results.length === 0) {
+//             return res.status(404).json({ error: 'User not found' });
+//         }
 
-        const user = results[0];
+//         const user = results[0];
 
-        // Decrypt the stored password
-        bcrypt.compare(currentPassword, user.password, (err, passwordMatch) => {
-            if (err) {
-                console.error('Error comparing passwords:', err);
-                return res.status(500).json({ error: 'Internal server error' });
-            }
+//         // Decrypt the stored password
+//         bcrypt.compare(currentPassword, user.password, (err, passwordMatch) => {
+//             if (err) {
+//                 console.error('Error comparing passwords:', err);
+//                 return res.status(500).json({ error: 'Internal server error' });
+//             }
 
-            if (!passwordMatch) {
-                return res.status(401).json({ error: 'Current password is incorrect' });
-            }
+//             if (!passwordMatch) {
+//                 return res.status(401).json({ error: 'Current password is incorrect' });
+//             }
 
-            // Hash the new password
-            bcrypt.hash(newPassword, 10, (err, hashedPassword) => {
-                if (err) {
-                    console.error('Error hashing new password:', err);
-                    return res.status(500).json({ error: 'Internal server error' });
-                }
+//             // Hash the new password
+//             bcrypt.hash(newPassword, 10, (err, hashedPassword) => {
+//                 if (err) {
+//                     console.error('Error hashing new password:', err);
+//                     return res.status(500).json({ error: 'Internal server error' });
+//                 }
 
-                // Update user's password in the database
-                connection.query('UPDATE login SET password = ? WHERE username = ?', [hashedPassword, username], (error, results, fields) => {
-                    if (error) {
-                        console.error('Error updating password in database:', error.stack);
-                        return res.status(500).json({ error: 'Internal server error' });
-                    }
-                    res.json({ message: 'Password changed successfully' });
-                });
-            });
-        });
-    });
-})
+//                 // Update user's password in the database
+//                 connection.query('UPDATE login SET password = ? WHERE username = ?', [hashedPassword, username], (error, results, fields) => {
+//                     if (error) {
+//                         console.error('Error updating password in database:', error.stack);
+//                         return res.status(500).json({ error: 'Internal server error' });
+//                     }
+//                     res.json({ message: 'Password changed successfully' });
+//                 });
+//             });
+//         });
+//     });
+// })
 
 // app.post('/request-material', (req, res) => {
 //     const { name, site_name, material, date_of_request, quantity } = req.body;
@@ -1049,7 +1049,7 @@ app.post("/send-material-ok", verifyToken, (req, res) => {
         location,
         chalan_id,
         description,
-        mod,
+        m_o_d,
     } = req.body;
 
     // const id = req.params.id;
@@ -1064,11 +1064,11 @@ app.post("/send-material-ok", verifyToken, (req, res) => {
         location,
         chalan_id,
         description,
-        mod,
+        m_o_d,
         id,
     ];
 
-    const query = `UPDATE stocks SET item_status = ?, project_name=?, cost=?, reciever_name=?, reciever_contact=?, Location=?, chalan_id=?, description=?, \`mod\`=? WHERE id=?`;
+    const query = `UPDATE stocks SET item_status = ?, project_name=?, cost=?, reciever_name=?, reciever_contact=?, Location=?, chalan_id=?, description=?, m_o_d=? WHERE id=?`;
 
     connection.query(query, values, (error, results) => {
         if (error) {
@@ -1247,7 +1247,7 @@ app.put('/toggle', (req, res) => {
     });
 });
 
-app.post('/upload', upload.single('file'), (req, res) => {
+app.post('/bulk-upload', upload.single('file'), (req, res) => {
     // Check if file is provided
     if (!req.file) {
         return res.status(400).send('No file uploaded.');
@@ -1262,23 +1262,23 @@ app.post('/upload', upload.single('file'), (req, res) => {
     const sheetData = excelData[Object.keys(excelData)[0]];
 
     // Map Excel data to match column names
-    const mappedData = sheetData.map(row => ({
-        id: row.id,
-        item_id: row.item_id,
-        item_name: row.item_name,
-        added_date: row.added_date,
-        supplier_id: row.supplier_id,
-        item_status: row.item_status,
-        project_name: row.project_name,
-        cost: row.cost,
-        reciever_name: row.receiver_name,
-        reciever_contact: row.receiver_contact,
-        Location: row.Location,
-        updated_date: row.updated_date,
-        chalan_id: row.chalan_id,
-        description: row.description,
-        mod: row.mod
-    }));
+    const mappedData = sheetData.map(row => ([
+        row.id,
+        row.item_id,
+        row.item_name,
+        row.added_date,
+        row.supplier_id,
+        row.item_status,
+        row.project_name,
+        row.cost,
+        row.reciever_name,
+        row.reciever_contact,
+        row.Location,
+        row.updated_date,
+        row.chalan_id,
+        row.description,
+        row.m_o_d
+    ]));
 
     // Insert mapped data into database
     connection.getConnection((err, connection) => {
@@ -1287,8 +1287,8 @@ app.post('/upload', upload.single('file'), (req, res) => {
             return res.status(500).send('Internal Server Error');
         }
 
-        const sql = 'INSERT INTO stocks SET ?';
-        connection.query(sql, mappedData, (err, results) => {
+        const sql = 'INSERT INTO stocks (id, item_id, item_name, added_date, supplier_id, item_status, project_name, cost, reciever_name, reciever_contact, Location, updated_date, chalan_id, description, m_o_d) VALUES ?';
+        connection.query(sql, [mappedData], (err, results) => {
             connection.release(); // Release connection
             if (err) {
                 console.error('Error inserting data into database:', err);
@@ -1298,6 +1298,57 @@ app.post('/upload', upload.single('file'), (req, res) => {
         });
     });
 });
+
+
+app.post('/change-password', verifyToken, (req, res) => {
+    const { currentPassword, newPassword, confirmPassword, id } = req.body;
+
+    // Check if new password and confirm password match
+    if (newPassword !== confirmPassword) {
+        return res.status(400).json({ error: "New password and confirm password don't match" });
+    }
+
+    // Fetch hashed password from the database
+    connection.query('SELECT password FROM users WHERE id = ?', [id], (error, results, fields) => {
+        if (error) {
+            return res.status(500).json({ error: "Internal server error" });
+        }
+
+        if (results.length === 0) {
+            return res.status(404).json({ error: "User not found" });
+        }
+
+        const hashedPassword = results[0].password;
+
+        // Compare hashed current password with the stored hashed password
+        bcrypt.compare(currentPassword, hashedPassword, (err, isMatch) => {
+            if (err) {
+                return res.status(500).json({ error: "Internal server error" });
+            }
+
+            if (!isMatch) {
+                return res.status(401).json({ error: "Current password is incorrect" });
+            }
+
+            // Hash the new password
+            bcrypt.hash(newPassword, 10, (err, hashedNewPassword) => {
+                if (err) {
+                    return res.status(500).json({ error: "Internal server error" });
+                }
+
+                // Update hashed password in the database
+                connection.query('UPDATE users SET password = ? WHERE id = ?', [hashedNewPassword, id], (error, results, fields) => {
+                    if (error) {
+                        return res.status(500).json({ error: "Internal server error" });
+                    }
+
+                    return res.status(200).json({ message: "Password updated successfully" });
+                });
+            });
+        });
+    });
+});
+
 
 const port = process.env.PORT || 5050;
 app.listen(port, () => {
