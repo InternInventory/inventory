@@ -413,9 +413,9 @@ app.get('/history', verifyToken, (req, res) => {
 
 
 app.get('/profile', verifyToken, (req, res) => {
-    const userId = req.decoded.userId;
+    const id = req.body;
 
-    connection.query('SELECT firstName FROM login WHERE userId = ?', [userId], (error, results) => {
+    connection.query('SELECT username FROM users WHERE id = ?', [id], (error, results) => {
         if (error) {
             console.error('Error fetching name from database:', error.stack);
             return res.status(500).json({ error: 'Internal server error' });
@@ -424,8 +424,8 @@ app.get('/profile', verifyToken, (req, res) => {
             return res.status(404).json({ error: 'User not found' });
         }
 
-        const firstName = results[0].firstName;
-        res.json({ firstName });
+        const username = results[0].username;
+        res.json({ username });
 
     });
 })
@@ -778,7 +778,7 @@ app.post('/send-material', (req, res) => {
 
 app.get('/inwards', verifyToken, (req, res) => {
 
-    connection.query("SELECT count(item_status) as Inwards FROM inventory.stocks;", (error, results) => {
+    connection.query("SELECT count(item_status) as Inwards FROM stocks;", (error, results) => {
         if (error) {
             console.error('Error fetching itemrs from database ,error.stack');
             return res.status(500).json({ error: "Internal server error" })
@@ -790,7 +790,7 @@ app.get('/inwards', verifyToken, (req, res) => {
 
 app.get('/outwards', verifyToken, (req, res) => {
 
-    connection.query("SELECT count(item_status) as Outward FROM inventory.stocks WHERE item_status = 1;", (error, results) => {
+    connection.query("SELECT count(item_status) as Outward FROM stocks WHERE item_status = 1;", (error, results) => {
         if (error) {
             console.error('Error fetching items from database ,error.stack');
             return res.status(500).json({ error: "Internal server error" })
@@ -930,17 +930,6 @@ app.get('/out-of-stock', verifyToken, (req, res) => {
     })
 })
 
-app.get('/users', verifyToken, (req, res) => {
-
-
-    connection.query("SELECT count(*) as users FROM inventory.login", (error, results) => {
-        if (error) {
-            console.error('Error fetching items from database ');
-            return res.status(500).json({ error: "Internal server error" })
-        }
-        res.json({ users: results })
-    })
-})
 
 app.post('/get-report', verifyToken, (req, res) => {
     console.log(req.body);
@@ -1348,6 +1337,47 @@ app.post('/change-password', verifyToken, (req, res) => {
         });
     });
 });
+
+
+app.get('/active-po', (req, res) => {
+    connection.query("SELECT COUNT(status) AS Active FROM po_list WHERE status = 3;", (error, results) => {
+        if (error) {
+            console.error('Error fetching items from database ');
+            return res.status(500).json({ error: "Internal server error" })
+        }
+        res.json({ items: results })
+    })
+})
+
+app.get('/pending-po', (req, res) => {
+    connection.query("SELECT COUNT(status) AS Pending FROM po_list WHERE status = 1;", (error, results) => {
+        if (error) {
+            console.error('Error fetching items from database ');
+            return res.status(500).json({ error: "Internal server error" })
+        }
+        res.json({ items: results })
+    })
+})
+
+app.get('/users', (req, res) => {
+    connection.query("SELECT COUNT(id) AS user FROM users;", (error, results) => {
+        if (error) {
+            console.error('Error fetching items from database ');
+            return res.status(500).json({ error: "Internal server error" })
+        }
+        res.json({ results })
+    })
+})
+
+app.get('/pending-request', (req, res) => {
+    connection.query("SELECT count(id) AS Pending FROM requestmaterial WHERE approve_status = 0;", (error, results) => {
+        if (error) {
+            console.error('Error fetching items from database ');
+            return res.status(500).json({ error: "Internal server error" })
+        }
+        res.json({ items: results })
+    })
+})
 
 
 const port = process.env.PORT || 5050;
