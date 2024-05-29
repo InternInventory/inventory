@@ -1079,21 +1079,21 @@ app.post("/send-material-ok", verifyToken, (req, res) => {
 
 // For adding items into stocks table (add-item)
 app.post("/api/add-item", verifyToken, (req, res) => {
-    const { item_id, item_name, supplier_id, stock_holder_name, stock_holder_contact, stock_status, working_status, rack } = req.body;
+    const { item_id, item_name, supplier_id, stock_holder_name, stock_holder_contact, stock_status, working_status, rack, slot } = req.body;
 
     // Check if all required fields are present
-    if (!item_id || !item_name || !supplier_id || !stock_holder_name || !stock_holder_contact || !stock_status || !working_status || !rack) {
+    if (!item_id || !item_name || !supplier_id || !stock_holder_name || !stock_holder_contact || !stock_status || !working_status || !rack || !slot) {
         res.status(400).json({ error: "Missing required fields" });
         return;
     }
 
     // Create a SQL query to insert data into the database
-    const query = `INSERT INTO stocks (item_id, item_name, supplier_id, stock_holder_name, stock_holder_contact, stock_status, working_status, rack ) VALUES (?, ?, ?, ?, ?, ?, ?, ? )`;
+    const query = `INSERT INTO stocks (item_id, item_name, supplier_id, stock_holder_name, stock_holder_contact, stock_status, working_status, rack, slot ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ? )`;
 
     // Execute the query
     connection.query(
         query,
-        [item_id, item_name, supplier_id, stock_holder_name, stock_holder_contact, stock_status, working_status, rack],
+        [item_id, item_name, supplier_id, stock_holder_name, stock_holder_contact, stock_status, working_status, rack, slot],
         (error, results) => {
             if (error) {
                 console.error("Error executing query:", error);
