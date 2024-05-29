@@ -590,7 +590,7 @@ function sendEmail(email, requestMaterial) {
 app.get('/raised-request', verifyToken, (req, res) => {
 
 
-    connection.query("SELECT * FROM requestmaterial", (error, results) => {
+    connection.query("SELECT * FROM requestmaterial WHERE approve_status = 0", (error, results) => {
         if (error) {
             console.error('Error fetching items from database', error.stack);
             return res.status(500).json({ error: "Internal server error" })
@@ -600,8 +600,7 @@ app.get('/raised-request', verifyToken, (req, res) => {
 })
 
 app.get('/approved-history', verifyToken, (req, res) => {
-    const { name } = req.body;
-    connection.query("SELECT * FROM approvedhistory", (error, results) => {
+    connection.query("SELECT * FROM requestmaterial WHERE approve_status = 1", (error, results) => {
         if (error) {
             console.error('Error fetching itemrs from database ,error.stack');
             return res.status(500).json({ error: "Internal server error" })
