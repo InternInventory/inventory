@@ -224,7 +224,7 @@ app.post('/hash_password', async (req, res) => {
 app.get('/added-item-list', (req, res) => {
     //const { item_name } = req.body;
 
-    connection.query('SELECT item_name, supplier_id, added_date FROM stocks ORDER BY added_date desc', (error, results) => {
+    connection.query('SELECT item_id, item_name, supplier_id, stock_holder_name, stock_holder_contact, stock_status, working_status, rack, slot, added_date FROM stocks ORDER BY added_date desc', (error, results) => {
         if (error) {
             console.error('Error fetching items from database:', error.stack);
             return res.status(500).json({ error: 'Internal server error' });
@@ -1500,6 +1500,18 @@ app.post("/delete-request", (req, res) => {
         res.status(200).json({ message: 'Query status updated successfully' });
     });
 })
+
+app.get("/user-list", (req, res) => {
+    connection.query("SELECT id, first_name, email, contact_no FROM users ;", (error, results) => {
+        if (error) {
+            console.error('Error fetching items from database ');
+            return res.status(500).json({ error: "Internal server error" })
+        }
+        res.json({ user: results });
+    })
+});
+
+
 
 const port = process.env.PORT || 5050;
 app.listen(port, () => {
