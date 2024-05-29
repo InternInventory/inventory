@@ -1079,21 +1079,21 @@ app.post("/send-material-ok", verifyToken, (req, res) => {
 
 // For adding items into stocks table (add-item)
 app.post("/api/add-item", verifyToken, (req, res) => {
-    const { item_id, item_name, supplier_id } = req.body;
+    const { item_id, item_name, supplier_id, stock_holder_name, stock_holder_contact, stock_status, working_status, rack } = req.body;
 
     // Check if all required fields are present
-    if (!item_id || !item_name || !supplier_id) {
+    if (!item_id || !item_name || !supplier_id || !stock_holder_name || !stock_holder_contact || !stock_status || !working_status || !rack) {
         res.status(400).json({ error: "Missing required fields" });
         return;
     }
 
     // Create a SQL query to insert data into the database
-    const query = `INSERT INTO stocks (item_id, item_name, supplier_id ) VALUES (?, ?, ?)`;
+    const query = `INSERT INTO stocks (item_id, item_name, supplier_id, stock_holder_name, stock_holder_contact, stock_status, working_status, rack ) VALUES (?, ?, ?, ?, ?, ?, ?, ? )`;
 
     // Execute the query
     connection.query(
         query,
-        [item_id, item_name, supplier_id],
+        [item_id, item_name, supplier_id, stock_holder_name, stock_holder_contact, stock_status, working_status, rack],
         (error, results) => {
             if (error) {
                 console.error("Error executing query:", error);
@@ -1379,6 +1379,127 @@ app.get('/pending-request', (req, res) => {
     })
 })
 
+
+app.post('/download-report', (req, res) => {
+    const { project_name, stockType, from, to, site, item_name } = req.body;
+
+    let query = 'SELECT * FROM stocks WHERE 1=1';
+    const queryParams = [];
+
+    if (project_name) {
+        query += ' AND projectName = ?';
+        queryParams.push(projectName);
+    }
+    if (stockType) {
+        query += ' AND stockType = ?';
+        queryParams.push(stockType);
+    }
+    if (from) {
+        query += ' AND date >= ?';
+        queryParams.push(from);
+    }
+    if (to) {
+        query += ' AND date <= ?';
+        queryParams.push(to);
+    }
+    if (site) {
+        query += ' AND site = ?';
+        queryParams.push(site);
+    }
+    if (item_name) {
+        query += ' AND material = ?';
+        queryParams.push(material);
+    }
+
+    connection.query(query, queryParams, (error, results) => {
+        if (error) {
+            console.error('Error fetching report from database:', error.stack);
+            return res.status(500).json({ error: 'Internal server error' });
+        }
+
+        // Create a PDF document
+        const doc = new PDFDocument();
+        const filePath = `/tmp/report_${Date.now()}.pdf`;
+        const writeStream = fs.createWriteStream(filePath);
+        doc.pipe(writeStream);
+
+        doc.fontSize(18).text('Report', { align: 'center' });
+        doc.moveDown();
+
+        results.forEach((row, index) => {
+            doc.fontSize(12).text(`Record ${index + 1}`, { underline: true });
+            doc.fontSize(10).text(`Project Name: ${row.projectName}`);
+            doc.text(`Stock Type: ${row.stockType}`);
+            doc.text(`Date: ${row.date}`);
+            doc.text(`Site: ${row.site}`);
+            doc.text(`Material: ${row.material}`);
+            doc.moveDown();
+        });
+
+        doc.end();
+
+        writeStream.on('finish', () => {
+            res.download(filePath, 'report.pdf', (err) => {
+                if (err) {
+                    console.error('Error downloading file:', err.stack);
+                    res.status(500).json({ error: 'Error downloading file' });
+                }
+
+                // Clean up the file after download
+                fs.unlink(filePath, (err) => {
+                    if (err) {
+                        console.error('Error deleting file:', err.stack);
+                    }
+                });
+            });
+        });
+    });
+});
+
+
+app.post("/accept-request", (req, res) => {
+    const { id } = req.body;
+
+
+    // Update status of query in database
+    const sql = `UPDATE requestmaterial SET approve_status = 1 WHERE id = ?`;
+
+    connection.query(sql, [id], (err, result) => {
+        if (err) {
+            console.error('Error updating query status: ', err);
+            return res.status(500).json({ message: 'Error updating query status' });
+        }
+
+        if (result.affectedRows === 0) {
+            return res.status(404).json({ message: 'Query not found' });
+        }
+
+        console.log('Query status updated successfully');
+        res.status(200).json({ message: 'Query status updated successfully' });
+    });
+})
+
+app.post("/delete-request", (req, res) => {
+    const { id } = req.body;
+
+
+    // Update status of query in database
+    const sql = `UPDATE requestmaterial SET approve_status = 2 WHERE id = ?`;
+
+    connection.query(sql, [id], (err, result) => {
+        if (err) {
+            console.error('Error updating query status: ', err);
+            return res.status(500).json({ message: 'Error updating query status' });
+        }
+
+        if (result.affectedRows === 0) {
+            return res.status(404).json({ message: 'Query not found' });
+        }
+
+        console.log('Query status updated successfully');
+        res.status(200).json({ message: 'Query status updated successfully' });
+    });
+})
 
 const port = process.env.PORT || 5050;
 app.listen(port, () => {
