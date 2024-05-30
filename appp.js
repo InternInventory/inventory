@@ -12,7 +12,7 @@ dotenv.config();
 const app = express();
 const multer = require('multer');
 const excelToJson = require('convert-excel-to-json');
-const upload = multer({ dest: 'uploads/' });
+const xlsx = require('xlsx');
 /// hellol
 
 app.use(bodyParser.json());
@@ -1235,57 +1235,6 @@ app.put('/toggle', (req, res) => {
     });
 });
 
-app.post('/bulk-upload', upload.single('file'), (req, res) => {
-    // Check if file is provided
-    if (!req.file) {
-        return res.status(400).send('No file uploaded.');
-    }
-
-    // Convert Excel to JSON
-    const excelData = excelToJson({
-        sourceFile: req.file.path
-    });
-
-    // Extract data from the first sheet (assuming it's the only one)
-    const sheetData = excelData[Object.keys(excelData)[0]];
-
-    // Map Excel data to match column names
-    const mappedData = sheetData.map(row => ([
-        row.id,
-        row.item_id,
-        row.item_name,
-        row.added_date,
-        row.supplier_id,
-        row.item_status,
-        row.project_name,
-        row.cost,
-        row.reciever_name,
-        row.reciever_contact,
-        row.Location,
-        row.updated_date,
-        row.chalan_id,
-        row.description,
-        row.m_o_d
-    ]));
-
-    // Insert mapped data into database
-    connection.getConnection((err, connection) => {
-        if (err) {
-            console.error('Error connecting to database:', err);
-            return res.status(500).send('Internal Server Error');
-        }
-
-        const sql = 'INSERT INTO stocks (id, item_id, item_name, added_date, supplier_id, item_status, project_name, cost, reciever_name, reciever_contact, Location, updated_date, chalan_id, description, m_o_d) VALUES ?';
-        connection.query(sql, [mappedData], (err, results) => {
-            connection.release(); // Release connection
-            if (err) {
-                console.error('Error inserting data into database:', err);
-                return res.status(500).send('Internal Server Error');
-            }
-            res.status(200).send('Data uploaded successfully.');
-        });
-    });
-});
 
 
 app.post('/change-password', verifyToken, (req, res) => {
@@ -1510,6 +1459,43 @@ app.get("/user-list", (req, res) => {
     })
 });
 
+// Multer setup for file upload
+const upload = multer({ dest: 'uploads/' });
+
+// API endpoint to upload XLSX file
+app.post('/upload', upload.single('file'), (req, res) => {
+    const file = req.file;
+    if (!file) {
+        return res.status(400).send('No file uploaded.');
+    }
+
+    // Parse the XLSX file
+    const workbook = xlsx.readFile(file.path);
+    const sheetName = workbook.SheetNames[0];
+    const sheet = workbook.Sheets[sheetName];
+    const rows = xlsx.utils.sheet_to_json(sheet);
+
+    // Insert rows into the MySQL database
+    rows.forEach(row => {
+        const sql = `INSERT INTO stocks (
+            item_id, item_name, make, mac_id, stock_holder_name, stock_holder_contact, stock_status, working_status, 
+            rack, slot, added_date, supplier_id, item_status, project_name, cost, reciever_name, 
+            reciever_contact, location, updated_date, chalan_id, description, m_o_d
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
+
+        const values = [
+            row.item_id, row.item_name, row.make, row.mac_id, row.stock_holder_name, row.stock_holder_contact, row.stock_status, row.working_status,
+            row.rack, row.slot, row.added_date, row.supplier_id, row.item_status, row.project_name, row.cost, row.reciever_name,
+            row.reciever_contact, row.location, row.updated_date, row.chalan_id, row.description, row.m_o_d
+        ];
+
+        connection.query(sql, values, (err) => {
+            if (err) throw err;
+        });
+    });
+
+    res.send('File uploaded and data inserted successfully.');
+});
 
 
 const port = process.env.PORT || 5050;

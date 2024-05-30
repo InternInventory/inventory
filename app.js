@@ -7,6 +7,8 @@ const nodemailer = require("nodemailer");
 const randomstring = require("randomstring");
 const PDFDocument = require("pdfkit");
 const fs = require("fs"); //To read file
+const multer = require('multer');
+const xlsx = require('xlsx');
 const dotenv = require("dotenv");
 dotenv.config();
 const app = express();
@@ -948,21 +950,21 @@ app.post("/api/add-record", (req, res) => {
 
 // For adding items into stocks table (add-item)
 app.post("/api/add-item", (req, res) => {
-    const { item_id, item_name, added_date, supplier_id } = req.body;
+    const { item_id, item_name, added_date, supplier_id, make, mac_id, stock_holder_name, stock_holder_contact, stock_status, working_status, rack, slot } = req.body;
 
     // Check if all required fields are present
-    if (!item_id || !item_name || !added_date || !supplier_id) {
+    if (!item_id || !item_name || !added_date || !supplier_id || !make || !mac_id || !stock_holder_name || !stock_holder_contact || !stock_status || !working_status || !rack || !slot) {
         res.status(400).json({ error: "Missing required fields" });
         return;
     }
 
     // Create a SQL query to insert data into the database
-    const query = `INSERT INTO stocks (item_id, item_name, added_date, supplier_id ) VALUES (?, ?, ?, ?)`;
+    const query = `INSERT INTO stocks (item_id, item_name, added_date, supplier_id, make, mac_id, stock_holder_name, stock_holder_contact, stock_status, working_status, rack, slot ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
 
     // Execute the query
     connection.query(
         query,
-        [item_id, item_name, added_date, supplier_id],
+        [item_id, item_name, added_date, supplier_id, make, mac_id, stock_holder_name, stock_holder_contact, stock_status, working_status, rack, slot],
         (error, results) => {
             if (error) {
                 console.error("Error executing query:", error);
@@ -1460,6 +1462,44 @@ app.post("/get-report", (req, res) => {
             res.json(results);
         }
     );
+});
+
+// Multer setup for file upload
+const upload = multer({ dest: 'uploads/' });
+
+// API endpoint to upload XLSX file
+app.post('/upload', upload.single('file'), (req, res) => {
+    const file = req.file;
+    if (!file) {
+        return res.status(400).send('No file uploaded.');
+    }
+
+    // Parse the XLSX file
+    const workbook = xlsx.readFile(file.path);
+    const sheetName = workbook.SheetNames[0];
+    const sheet = workbook.Sheets[sheetName];
+    const rows = xlsx.utils.sheet_to_json(sheet);
+
+    // Insert rows into the MySQL database
+    rows.forEach(row => {
+        const sql = `INSERT INTO stocks_test (
+            item_id, item_name, make, mac_id, stock_holder_name, stock_holder_contact, stock_status, working_status, 
+            rack, slot, added_date, supplier_id, item_status, project_name, cost, reciever_name, 
+            reciever_contact, location, updated_date, chalan_id, description, m_o_d
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
+
+        const values = [
+            row.item_id, row.item_name, row.make, row.mac_id, row.stock_holder_name, row.stock_holder_contact, row.stock_status, row.working_status,
+            row.rack, row.slot, row.added_date, row.supplier_id, row.item_status, row.project_name, row.cost, row.reciever_name,
+            row.reciever_contact, row.location, row.updated_date, row.chalan_id, row.description, row.m_o_d
+        ];
+
+        connection.query(sql, values, (err) => {
+            if (err) throw err;
+        });
+    });
+
+    res.send('File uploaded and data inserted successfully.');
 });
 
 const port = process.env.PORT || 5050;
