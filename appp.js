@@ -1029,8 +1029,9 @@ app.get('/projects', verifyToken, (req, res) => {
 // To update database for sent materials
 app.post("/send-material-ok", verifyToken, (req, res) => {
     const {
-        id,
         project_name,
+        item_id,
+        item_name,
         cost,
         receiver_name,
         receiver_contact,
@@ -1045,6 +1046,7 @@ app.post("/send-material-ok", verifyToken, (req, res) => {
     const item_status = 1;
     let values = [
         item_status,
+        item_name,
         project_name,
         cost,
         receiver_name,
@@ -1053,10 +1055,10 @@ app.post("/send-material-ok", verifyToken, (req, res) => {
         chalan_id,
         description,
         m_o_d,
-        id,
+        item_id
     ];
 
-    const query = `UPDATE stocks SET item_status = ?, project_name=?, cost=?, reciever_name=?, reciever_contact=?, Location=?, chalan_id=?, description=?, m_o_d=? WHERE id=?`;
+    const query = `UPDATE stocks SET item_status = ?, item_name=?, project_name=?, cost=?, reciever_name=?, reciever_contact=?, Location=?, chalan_id=?, description=?, m_o_d=? WHERE item_id=?`;
 
     connection.query(query, values, (error, results) => {
         if (error) {
