@@ -777,7 +777,7 @@ app.post('/send-material', (req, res) => {
 
 app.get('/inwards', verifyToken, (req, res) => {
 
-    connection.query("SELECT count(item_status) as Inwards FROM stocks;", (error, results) => {
+    connection.query("SELECT count(item_status) as Inwards FROM stocks WHERE item_status = 0;", (error, results) => {
         if (error) {
             console.error('Error fetching itemrs from database ,error.stack');
             return res.status(500).json({ error: "Internal server error" })
@@ -1496,6 +1496,16 @@ app.post('/upload', upload.single('file'), (req, res) => {
 
     res.send('File uploaded and data inserted successfully.');
 });
+
+app.get("/item-id-dropdown", (req, res) => {
+    connection.query("SELECT distinct item_id FROM stocks", (error, results) => {
+        if (error) {
+            console.error('Error fetching items from database ');
+            return res.status(500).json({ error: "Internal server error" })
+        }
+        res.json({ users: results })
+    })
+})
 
 
 const port = process.env.PORT || 5050;
