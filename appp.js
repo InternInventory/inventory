@@ -19,7 +19,7 @@ const cors = require('cors');
 app.use(bodyParser.json());
 
 const corsOptions = {
-    origin: "*",
+    origin: "https://inventory.flutterflow.app",
     methods: "GET,PUT,POST,HEAD,PATCH,DELETE",
     preflightContinue: false,
     optionsSuccessStatus: 204,
