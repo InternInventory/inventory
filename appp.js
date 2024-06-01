@@ -688,16 +688,16 @@ app.post('/forgot-password', (req, res) => {
 
 //remove item_id from code and database
 app.post('/add-po', verifyToken, (req, res) => {
-    const { po_code, supplier_id, item_id, quantity, status } = req.body;
+    const { po_code, supplier_id, item_name, quantity, status } = req.body;
 
-    if (!po_code || !supplier_id || !item_id || !quantity || !status) {
+    if (!po_code || !supplier_id || !item_name || !quantity || !status) {
         return res.status(400).json({ error: 'Missing required fields' });
     }
 
     const po_list = {
         po_code,
         supplier_id,
-        item_id,
+        item_name,
         quantity,
         status
 
