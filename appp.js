@@ -13,10 +13,21 @@ const app = express();
 const multer = require('multer');
 const excelToJson = require('convert-excel-to-json');
 const xlsx = require('xlsx');
+const cors = require('cors');
 /// hellol
 
 app.use(bodyParser.json());
 
+const corsOptions = {
+    origin: "*",
+    methods: "GET,PUT,POST,HEAD,PATCH,DELETE",
+    preflightContinue: false,
+    optionsSuccessStatus: 204,
+    allowedHeaders: "Content-Type, Authorization",
+};
+
+app.use(cors());
+app.use(cors(corsOptions));
 //MySQL connection configuration
 const connection = mysql.createPool({
     host: process.env.DB_HOST,
@@ -423,9 +434,8 @@ app.get('/profile', verifyToken, (req, res) => {
         if (results.length === 0) {
             return res.status(404).json({ error: 'User not found' });
         }
+        res.json({ items: results });
 
-        const username = results[0].username;
-        res.json({ username });
 
     });
 })
@@ -809,23 +819,23 @@ function generatePDF(data) {
         });
         data.forEach(row => {
             doc.rect(50, 50, 514, 700).stroke();
-            // doc.image('./C:/Users/broto/Downloads/BuildINT.png', 207, 55, { width: 200, height: 50 });
+            doc.image('C:/Users/shubh/Desktop/New folder/inventory/buildint.png', 457, 55, { width: 100, height: 25 });
             doc.font('Times-Bold').fontSize(14).text('DELIVERY CHALLAN', 55, 115, { width: 504, height: 35, align: 'left' })
             doc.font('Times-Bold').fontSize(14).text('Lightforce Buildint Pvt Ltd', 55, 130, { width: 504, height: 35, align: 'left' })
-            doc.font('Times-Bold').fontSize(10).text('408-412, Srishti Palza, Off Saki Vihar Road,', 55, 145, { width: 504, height: 35, align: 'left' })
+            doc.font('Times-Bold').fontSize(10).text('408-412, Srishti Palza, Off Saki Vihar Road,', 55, 147, { width: 504, height: 35, align: 'left' })
             doc.font('Times-Bold').fontSize(10).text('Powai, Mumbai 400072', 55, 160, { width: 504, height: 35, align: 'left' })
             doc.rect(50, 180, 514, 40).stroke();
             doc.font('Times-Bold').fontSize(25).text('Delivery Challan ', 165, 195, { width: 280, height: 5, align: 'center' })
             doc.rect(50, 220, 257, 25).stroke();
-            doc.font('Times-Bold').fontSize(15).text(`Challan Id :  ${row.challan_id}`, 55, 230, { width: 280, height: 5, align: 'left' })
+            doc.font('Times-Bold').fontSize(15).text(`Challan Id :  ${row.chalan_id}`, 55, 230, { width: 280, height: 5, align: 'left' })
             doc.rect(306, 220, 257, 25).stroke();
-            doc.font('Times-Bold').fontSize(15).text('Challan Date:  ', 310, 230, { width: 280, height: 5, align: 'left' })
+            doc.font('Times-Bold').fontSize(14).text(`Challan Date:  ${row.updated_date}`, 310, 230, { width: 280, height: 5, align: 'left' })
             doc.rect(50, 245, 257, 25).stroke();
-            doc.font('Times-Bold').fontSize(15).text(`Contact Person :  ${row.receiver_name}`, 55, 252, { width: 280, height: 5, align: 'left' })
+            doc.font('Times-Bold').fontSize(15).text(`Contact Person :  ${row.reciever_name}`, 55, 252, { width: 280, height: 5, align: 'left' })
             doc.rect(306, 245, 257, 25).stroke();
-            doc.font('Times-Bold').fontSize(15).text(`Contact Number :  ${row.receiver_contact}`, 310, 252, { width: 280, height: 5, align: 'left' })
+            doc.font('Times-Bold').fontSize(15).text(`Contact Number :  ${row.reciever_contact}`, 310, 252, { width: 280, height: 5, align: 'left' })
             doc.rect(50, 270, 257, 25).stroke();
-            doc.font('Times-Bold').fontSize(15).text(`ATM ID :   ${row.site_id}`, 55, 275, { width: 280, height: 5, align: 'left' })
+            doc.font('Times-Bold').fontSize(15).text('ATM ID :  ', 55, 275, { width: 280, height: 5, align: 'left' })
             doc.rect(306, 270, 257, 25).stroke();
             doc.font('Times-Bold').fontSize(15).text('HPY Code :  ', 310, 275, { width: 280, height: 5, align: 'left' })
             doc.rect(50, 295, 257, 25).stroke();
@@ -833,20 +843,26 @@ function generatePDF(data) {
             doc.rect(306, 295, 257, 25).stroke();
             doc.font('Times-Bold').fontSize(15).text('Reverse Charge  :  ', 310, 300, { width: 280, height: 5, align: 'left' })
             doc.rect(50, 320, 257, 65).stroke();
-            doc.font('Times-Bold').fontSize(15).text(`Billed To :  ${row.receiver_name}`, 55, 325, { width: 280, height: 5, align: 'left' })
-            doc.font('Times-Bold').fontSize(12).text('Name :  ', 55, 345, { width: 280, height: 5, align: 'left' })
+            doc.font('Times-Bold').fontSize(15).text('Billed To :  ', 55, 325, { width: 280, height: 5, align: 'left' })
+            doc.font('Times-Bold').fontSize(12).text('Name :  Lightforce Buildint Pvt Ltd', 55, 345, { width: 280, height: 5, align: 'left' })
+            doc.font('Times-Bold').fontSize(12).text('408-412, Srishti Palaza, Off Saki Vihar Road')
+            doc.font('Times-Bold').fontSize(12).text('Powai, Mumbai 400076')
             doc.rect(306, 320, 257, 65).stroke();
-            doc.font('Times-Bold').fontSize(15).text(`Shipped To :  ${row.location}`, 310, 325, { width: 280, height: 5, align: 'left' })
-            doc.font('Times-Bold').fontSize(12).text('Name :  ', 310, 345, { width: 280, height: 5, align: 'left' })
+            doc.font('Times-Bold').fontSize(15).text(`Shipped To :  ${row.reciever_name}`, 310, 325, { width: 280, height: 5, align: 'left' })
+            doc.font('Times-Bold').fontSize(12).text(`Name :  ${row.Location}`, 310, 345, { width: 280, height: 5, align: 'left' })
             doc.rect(50, 385, 50, 25).stroke();
-            doc.font('Times-Bold').fontSize(10).text('SR. NO:  ', 52, 395, { width: 280, height: 5, align: 'left' })
+            doc.font('Times-Bold').fontSize(10).text('SR. NO: ', 53, 395, { width: 280, height: 5, align: 'left' })
             doc.rect(100, 385, 207, 25).stroke();
-            doc.font('Times-Bold').fontSize(10).text(`Description of Goods:  ${row.material}`, 150, 395, { width: 280, height: 5, align: 'left' })
+            doc.font('Times-Bold').fontSize(10).text('1', 53, 420)
+            doc.font('Times-Bold').fontSize(10).text(`Description of Goods:  `, 150, 395, { width: 280, height: 5, align: 'left' })
             doc.rect(306, 385, 50, 25).stroke();
-            doc.font('Times-Bold').fontSize(10).text(`Qty  ${row.quantity}`, 315, 395, { width: 280, height: 5, align: 'left' })
+            doc.font('Times-Bold').fontSize(10).text(`${row.item_name}`, 120, 420)
+            doc.font('Times-Bold').fontSize(10).text('Qty  ', 315, 395, { width: 280, height: 5, align: 'left' })
             doc.rect(356, 385, 207, 25).stroke();
+            doc.font('Times-Bold').fontSize(10).text(`${row.item_status}`, 315, 420)
             doc.font('Times-Bold').fontSize(10).text('Approx Amount  ', 420, 395, { width: 280, height: 5, align: 'left' })
             doc.rect(50, 410, 50, 150).stroke();
+            doc.font('Times-Bold').fontSize(10).text(`${row.cost}`, 400, 420)
             doc.rect(100, 410, 207, 150).stroke();
             doc.rect(306, 410, 207, 150).stroke();
             doc.rect(356, 410, 207, 150).stroke();
@@ -858,8 +874,9 @@ function generatePDF(data) {
             doc.rect(50, 580, 514, 30).stroke();
             doc.font('Times-Bold').fontSize(10).text('If any difference is found in quantity, quality and rate etc. it should be notified in writing withing 24 Hours. No claim will be entertained thereafter', 52, 585)
             doc.font('Times-Bold').fontSize(10).text('For LIGHTFORCE BUILDINT PRIVATE LIMITED', 52, 615)
-            doc.font('Times-Bold').fontSize(10).text('Authorized Signatory', 52, 690)
-            doc.font('Times-Bold').fontSize(10).text('Received By : ____', 250, 690, { width: 280, height: 5, align: 'right' })
+            doc.image('C:/Users/shubh/Desktop/New folder/inventory/sign.png', 60, 630, { width: 112, height: 80 });
+            doc.font('Times-Bold').fontSize(10).text('Authorized Signatory', 60, 720)
+            doc.font('Times-Bold').fontSize(10).text('Received By : _____________', 240, 720, { width: 280, height: 5, align: 'right' })
 
         });
         // Finalize the PDF and close the stream
@@ -867,11 +884,11 @@ function generatePDF(data) {
 
     });
 }
-app.get('/generatepdf', verifyToken, async (req, res) => {
+app.get('/generatepdf', async (req, res) => {
     try {
-        const { sendmaterial } = req.query;
-        const query = 'SELECT * FROM sendmaterial WHERE challan_id = ?';
-        const values = [sendmaterial];
+        const { stocks } = req.query;
+        const query = 'SELECT * FROM stocks WHERE chalan_id = ?';
+        const values = [stocks];
         const results = {};
 
         async function executeQuery(query, value, key) {
@@ -887,16 +904,16 @@ app.get('/generatepdf', verifyToken, async (req, res) => {
             });
         }
 
-        const promises = [executeQuery(query, values, 'sendmaterial')];
+        const promises = [executeQuery(query, values, 'stocks')];
         await Promise.all(promises);
 
-        const data = results.sendmaterial;
+        const data = results.stocks;
         if (data.length === 0) {
             return res.status(404).json({ message: 'No data found' });
         }
 
         const pdfData = await generatePDF(data);
-        res.setHeader('Content-Disposition', 'attachment; filename="output.pdf"');
+        res.setHeader('Content-Disposition', 'attachment; filename="challan.pdf"');
         res.setHeader('Content-Type', 'application/pdf');
         res.status(200).end(pdfData);
     } catch (error) {
@@ -908,7 +925,7 @@ app.get('/generatepdf', verifyToken, async (req, res) => {
 app.get('/send-material-history', verifyToken, (req, res) => {
 
 
-    connection.query("SELECT * FROM stocks WHERE item_status = 1", (error, results) => {
+    connection.query("SELECT * FROM stocks WHERE item_status = 1 ORDER BY updated_date DESC", (error, results) => {
         if (error) {
             console.error('Error fetching items from database ');
             return res.status(500).json({ error: "Internal server error" })
