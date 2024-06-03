@@ -700,7 +700,6 @@ app.post('/add-po', verifyToken, (req, res) => {
         item_name,
         quantity,
         status
-
     };
 
     connection.query('INSERT INTO po_list SET ?', po_list, (error, results) => {
@@ -724,7 +723,7 @@ app.get('/purchase-order', verifyToken, (req, res) => {
 })
 
 app.post('/add-supplier', verifyToken, (req, res) => {
-    const { name, contact_number, address, status, contact_person } = req.body;
+    const { name, contact_number, address, contact_person, status } = req.body;
 
     if (!name || !contact_number || !address || !contact_person || !status) {
         return res.status(400).json({ error: 'Missing required fields' });
@@ -734,8 +733,8 @@ app.post('/add-supplier', verifyToken, (req, res) => {
         name,
         contact_number,
         address,
-        status,
-        contact_person
+        contact_person,
+        status
 
     };
 
@@ -1518,6 +1517,16 @@ app.post('/upload', upload.single('file'), (req, res) => {
 
 app.get("/item-id-dropdown", (req, res) => {
     connection.query("SELECT distinct item_id FROM stocks", (error, results) => {
+        if (error) {
+            console.error('Error fetching items from database ');
+            return res.status(500).json({ error: "Internal server error" })
+        }
+        res.json({ users: results })
+    })
+})
+
+app.get("/notification", (req, res) => {
+    connection.query("SELECT item_name, count(item_name) AS quantity FROM stocks GROUP BY item_name HAVING COUNT(item_name) < 20", (error, results) => {
         if (error) {
             console.error('Error fetching items from database ');
             return res.status(500).json({ error: "Internal server error" })
