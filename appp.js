@@ -1534,7 +1534,7 @@ app.get("/notification", (req, res) => {
         res.json({ users: results })
     })
 })
-
+  
 
 const port = process.env.PORT || 5050;
 app.listen(port, () => {
