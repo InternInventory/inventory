@@ -1525,7 +1525,7 @@ app.get("/item-id-dropdown", (req, res) => {
     })
 })
 
-app.get("/notification", (req, res) => {
+app.get("/notifications", (req, res) => {
     connection.query("SELECT item_name, count(item_name) AS quantity FROM stocks GROUP BY item_name HAVING COUNT(item_name) < 20", (error, results) => {
         if (error) {
             console.error('Error fetching items from database ');
