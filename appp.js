@@ -14,6 +14,7 @@ const multer = require('multer');
 const excelToJson = require('convert-excel-to-json');
 const xlsx = require('xlsx');
 const cors = require('cors');
+const session = require('express-session');
 /// hellol
 
 app.use(bodyParser.json());
@@ -62,7 +63,8 @@ function verifyToken(req, res, next) {
         if (err) {
             return res.status(401).json({ error: 'Failed to authenticate token' });
         }
-        req.decoded = decoded;
+        req.user_data = decoded;
+        console.log(req.user_data);
         next();
     });
 }
@@ -106,7 +108,7 @@ app.post('/login', async (req, res) => {
                 return;
             }
 
-            res.status(200).json({ "token": token, "role": user.role });
+            res.status(200).json({ "token": token, "role": user.role, "first_name": user.first_name });
         });
 
 
@@ -424,9 +426,9 @@ app.get('/history', verifyToken, (req, res) => {
 
 
 app.get('/profile', verifyToken, (req, res) => {
-    const id = req.body;
+    const userId = req.session.userId;
 
-    connection.query('SELECT username FROM users WHERE id = ?', [id], (error, results) => {
+    connection.query('SELECT first_name, role FROM users WHERE id = ?', [userId], (error, results) => {
         if (error) {
             console.error('Error fetching name from database:', error.stack);
             return res.status(500).json({ error: 'Internal server error' });
@@ -434,12 +436,9 @@ app.get('/profile', verifyToken, (req, res) => {
         if (results.length === 0) {
             return res.status(404).json({ error: 'User not found' });
         }
-        res.json({ items: results });
-
-
+        res.json({ first_name: results[0].first_name, role: results[0].role });
     });
-})
-
+});
 
 
 // app.post('/change-password', verifyToken, (req, res) => {
@@ -645,7 +644,7 @@ app.post('/forgot-password', (req, res) => {
         length: 6,
         charset: 'numeric'
     });
-    const expirationTime = new Date(Date.now() + 600000)    //OTP expires in 10 min
+    const expire_otp = new Date(Date.now() + 600000)    //OTP expires in 10 min
 
     // Create a nodemailer transporter
     const transporter = nodemailer.createTransport({
@@ -675,7 +674,7 @@ app.post('/forgot-password', (req, res) => {
         console.log('Email sent:', info.response);
 
         //UPDATE the database
-        connection.query('UPDATE login SET otp = ?, expirationTime = ? WHERE email = ?', [otp, expirationTime, email], (error, results) => {
+        connection.query('UPDATE users SET otp = ?, expire_otp = ? WHERE email = ?', [otp, expire_otp, email], (error, results) => {
             if (error) {
                 console.error('Error storing OTP in database:', error);
                 return res.status(500).json({ error: 'Failed to store OTP in database' });
@@ -685,6 +684,40 @@ app.post('/forgot-password', (req, res) => {
         });
     });
 });
+
+// Endpoint to verify OTP
+app.post('/verify-otp', (req, res) => {
+    const { email, otp } = req.body;
+  
+    connection.query('SELECT otp FROM users WHERE email = ?', [email], (err, results) => {
+      if (err) {
+        console.error('Error retrieving OTP:', err);
+        return res.status(500).send('Error retrieving OTP');
+      }
+  
+      if (results.length > 0) {
+        const storedOtp = results[0].otp;
+        console.log(`Stored OTP: ${storedOtp}, Provided OTP: ${otp}`);
+  
+        if (storedOtp === otp) {
+          connection.query('UPDATE users SET otp = NULL WHERE email = ?;', [email], (err) => {
+            if (err) {
+              console.error('Error deleting OTP:', err);
+              return res.status(500).send('Error deleting OTP');
+            }
+            return res.status(200).send('OTP verified successfully');
+          });
+        } else {
+          console.error('Invalid OTP provided:', otp);
+          return res.status(400).send('Invalid OTP');
+        }
+      } else {
+        console.error('No OTP found for the provided email:', email);
+        return res.status(400).send('Invalid OTP');
+      }
+    });
+  });
+  
 
 //remove item_id from code and database
 app.post('/add-po', verifyToken, (req, res) => {
@@ -1150,7 +1183,7 @@ app.get("/stock-count", verifyToken, (req, res) => {
             console.error('Error fetching items from database ');
             return res.status(500).json({ error: "Internal server error" })
         }
-        res.json({ results })
+        res.json(results)
     })
 });
 
@@ -1199,6 +1232,14 @@ app.post("/accept-po", (req, res) => {
 })
 
 app.post("/delete-supplier", (req, res) => {
+    const allowedRoles = ["Admin"];
+
+    if (!allowedRoles.includes(req.user_data.role)) {
+        return res
+            .status(403)
+            .json({ error: "Permission denied. Insufficient role." });
+    }
+
     const { id } = req.body;
 
 
@@ -1445,7 +1486,16 @@ app.post("/accept-request", (req, res) => {
     });
 })
 
-app.post("/delete-request", (req, res) => {
+app.post("/delete-request", verifyToken, (req, res) => {
+    const allowedRoles = ["Admin"];
+
+    if (!allowedRoles.includes(req.user_data.role)) {
+        return res
+            .status(403)
+            .json({ error: "Permission denied. Insufficient role." });
+    }
+
+
     const { id } = req.body;
 
 
@@ -1534,7 +1584,18 @@ app.get("/notifications", (req, res) => {
         res.json({ users: results })
     })
 })
-  
+
+app.get('/supp-count', (req, res) => {
+    connection.query("SELECT count(id) AS suppcount FROM suppliers;", (error, results) => {
+        if (error) {
+            console.error('Error fetching items from database ');
+            return res.status(500).json({ error: "Internal server error" })
+        }
+        res.json({ items: results })
+    })
+})
+
+
 
 const port = process.env.PORT || 5050;
 app.listen(port, () => {
