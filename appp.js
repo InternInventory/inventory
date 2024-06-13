@@ -926,9 +926,9 @@ app.post('/forgot-password', (req, res) => {
 
         });
     }
-    app.get('/generatepdf', async (req, res) => {
+    app.post('/generatepdf', async (req, res) => {
         try {
-            const { stocks } = req.query;
+            const { stocks } = req.body;
             const query = 'SELECT * FROM stocks WHERE chalan_id = ?';
             const values = [stocks];
             const results = {};
