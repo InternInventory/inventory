@@ -928,9 +928,9 @@ app.post('/forgot-password', (req, res) => {
     }
     app.post('/generatepdf', async (req, res) => {
         try {
-            const { stocks } = req.body;
+            const { chalan_id } = req.body;
             const query = 'SELECT * FROM stocks WHERE chalan_id = ?';
-            const values = [stocks];
+            const values = [chalan_id];
             const results = {};
 
             async function executeQuery(query, value, key) {
@@ -946,10 +946,10 @@ app.post('/forgot-password', (req, res) => {
                 });
             }
 
-            const promises = [executeQuery(query, values, 'stocks')];
+            const promises = [executeQuery(query, values, 'chalan_id')];
             await Promise.all(promises);
 
-            const data = results.stocks;
+            const data = results.chalan_id;
             if (data.length === 0) {
                 return res.status(404).json({ message: 'No data found' });
             }
@@ -1094,7 +1094,7 @@ app.post('/forgot-password', (req, res) => {
             cost,
             reciever_name,
             reciever_contact,
-            location,
+            Location,
             chalan_id,
             description,
             m_o_d,
@@ -1110,7 +1110,7 @@ app.post('/forgot-password', (req, res) => {
             cost,
             reciever_name,
             reciever_contact,
-            location,
+            Location,
             chalan_id,
             description,
             m_o_d,
