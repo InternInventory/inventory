@@ -535,22 +535,22 @@ app.post('/request-material', (req, res) => {
     }
 
     // Fetch user's email from login table
-    connection.query('SELECT email FROM users WHERE id = ?', id, (error, results) => {
-        if (error) {
-            console.error('Error fetching user email: ' + error.stack);
-            return res.status(500).json({ error: 'Internal server error' });
-        }
+    // connection.query('SELECT email FROM users WHERE id = ?', id, (error, results) => {
+    //     if (error) {
+    //         console.error('Error fetching user email: ' + error.stack);
+    //         return res.status(500).json({ error: 'Internal server error' });
+    //     }
 
-        if (results.length === 0) {
-            return res.status(404).json({ error: 'User not found' });
-        }
+    //     if (results.length === 0) {
+    //         return res.status(404).json({ error: 'User not found' });
+    //     }
 
-        const userEmail = results[0].email;
+    //     const userEmail = results[0].email;
 
         const uniqueId = generateUniqueId();
 
         const requestMaterial = {
-            ids: uniqueId,
+            id: uniqueId,
             name,
             site_name,
             material,
@@ -571,7 +571,27 @@ app.post('/request-material', (req, res) => {
             res.status(201).json({ message: 'Material requested successfully', item: requestMaterial });
         });
     });
-});
+
+
+app.post('/request-mat', verifyToken,(req, res) => {
+    const { name, site_name, material, quantity} = req.body;
+
+    const requestmaterial = {
+        name,
+        site_name,
+        material,
+        quantity,
+    };
+
+    connection.query('INSERT INTO requestmaterial SET ?', requestmaterial, (error, results) => {
+        if (error) {
+            console.error('Error inserting item into database: ' + error.stack);
+            return res.status(500).json({ error: 'Internal server error' });
+        }
+        console.log('Item added to database with ID: ' + results.insertId);
+        res.status(201).json({ message: 'Request added successfully', item: requestmaterial });
+    });
+})    
 
 function generateUniqueId() {
     const randomNumber = Math.floor(Math.random() * 90000) + 10000; // Generate a random number between 10000 and 99999
