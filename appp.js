@@ -572,39 +572,12 @@ app.post('/request-material', (req, res) => {
     });
 });
 
-
-app.post('/request-mat', verifyToken, (req, res) => {
-    const { name, site_name, material, quantity } = req.body;
-
-    const requestmaterial = {
-        name,
-        site_name,
-        material,
-        quantity,
-    };
-
-    connection.query('INSERT INTO requestmaterial SET ?', requestmaterial, (error, results) => {
-        if (error) {
-            console.error('Error inserting item into database: ' + error.stack);
-            return res.status(500).json({ error: 'Internal server error' });
-        }
-        console.log('Item added to database with ID: ' + results.insertId);
-        res.status(201).json({ message: 'Request added successfully', item: requestmaterial });
-    });
-})
-
-function generateUniqueId() {
-    const randomNumber = Math.floor(Math.random() * 90000) + 10000; // Generate a random number between 10000 and 99999
-    return randomNumber.toString(); // Convert the number to a string and return
-}
-
-
 function sendEmail(email, requestMaterial) {
     const mailOptions = {
         from: 'Interns@buildint.co',
         to: email,
-        subject: 'Material Request Confirmation',
-        text: `Dear User,\n\nYour request for material ${requestMaterial.material} has been successfully submitted.\n\nRequest ID: ${requestMaterial.ids}\n\nThank you.`
+        subject: 'Approval for requested material',
+        text: `Dear Sir/Ma'am,\n\nA request has been raised for a material: ${requestMaterial.material}.\n\nPlease find the details below:\n\nName: ${requestMaterial.name}\nSite Name: ${requestMaterial.site_name}\nMaterial: ${requestMaterial.material}\nProject Name: ${requestMaterial.project_name}\nDescription: ${requestMaterial.description}\nQuantity: ${requestMaterial.quantity}\n\nTo approve the request please visit: https://inventory.flutterflow.app/raisedRequest\n\nThank you.`
     };
 
     transporter.sendMail(mailOptions, function (error, info) {
@@ -615,6 +588,42 @@ function sendEmail(email, requestMaterial) {
         }
     });
 }
+
+
+app.post('/request-mat', verifyToken, (req, res) => {
+    const { name, site_name, material, project_name, description, quantity } = req.body;
+
+    const requestmaterial = {
+        name,
+        site_name,
+        material,
+        project_name,
+        description,
+        quantity,
+    };
+
+    
+    connection.query('INSERT INTO requestmaterial SET ?', requestmaterial, (error, results) => {
+        if (error) {
+            console.error('Error inserting item into database: ' + error.stack);
+            return res.status(500).json({ error: 'Internal server error' });
+        }
+        console.log('Item added to database with ID: ' + results.insertId);
+       
+        sendEmail('theo48173@gmail.com', requestmaterial);
+       
+        res.status(201).json({ message: 'Request added successfully', item: requestmaterial });
+    });
+})
+
+
+// function generateUniqueId() {
+//     const randomNumber = Math.floor(Math.random() * 90000) + 10000; // Generate a random number between 10000 and 99999
+//     return randomNumber.toString(); // Convert the number to a string and return
+// }
+
+
+
 
 app.get('/raised-request', verifyToken, (req, res) => {
 
@@ -948,18 +957,22 @@ function generatePDF(data) {
 }
 app.post('/generatepdf', async (req, res) => {
     try {
+        console.log("inside try block")
         const { chalan_id } = req.body;
         const query = 'SELECT * FROM stocks WHERE chalan_id = ?';
         const values = [chalan_id];
         const results = {};
 
         async function executeQuery(query, value, key) {
+            console.log("inside asyn block")
             return new Promise((resolve, reject) => {
                 connection.query(query, value, (err, result) => {
                     if (err) {
+                        console.log("data not found")
                         reject(err);
                     } else {
                         results[key] = result;
+                        console.log("data generated", results)
                         resolve();
                     }
                 });
@@ -978,6 +991,7 @@ app.post('/generatepdf', async (req, res) => {
         res.setHeader('Content-Disposition', 'attachment; filename="challan.pdf"');
         res.setHeader('Content-Type', 'application/pdf');
         res.status(200).end(pdfData);
+        console.log("test1")
     } catch (error) {
         console.error('Error:', error);
         res.status(500).json({ error: 'Internal Server Error' });
@@ -1069,7 +1083,7 @@ app.get('/req-status', verifyToken, (req, res) => {
 //Added on 17.04.2024
 //add project
 app.post('/add-project', verifyToken, (req, res) => {
-    const { name, created_by, updated_by } = req.body;
+    const { name, created_by } = req.body;
 
     // Check if all required fields are present
     if (!name || !created_by) {
@@ -1213,7 +1227,7 @@ app.get("/stock-count", verifyToken, (req, res) => {
             console.error('Error fetching items from database ');
             return res.status(500).json({ error: "Internal server error" })
         }
-        res.json(results)
+        res.json({results});
     })
 });
 
