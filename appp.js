@@ -37,6 +37,12 @@ const connection = mysql.createPool({
     database: process.env.DB_DATABASE,
 });
 
+app.use(session({
+    secret: 'shubham',
+    resave: false,
+    saveUninitialized: true,
+}));
+
 // Test
 // const connection = mysql.createConnection({
 //     host: "localhost",
@@ -87,10 +93,19 @@ app.post('/login', async (req, res) => {
         }
 
         const user = results[0];
+        console.log(user);
 
         // Compare entered password with password in database
         const compare = await bcrypt.compare(password, user.password)
-        if (!compare) {
+        // if (!compare) {
+        //     console.log("Unauthorized");
+        //     res.status(401).json({ error: "Invalid Password" });
+        //     return;
+        // }
+
+        if (compare) {
+            req.session.user = user;
+        } else {
             console.log("Unauthorized");
             res.status(401).json({ error: "Invalid Password" });
             return;
@@ -426,8 +441,9 @@ app.get('/history', verifyToken, (req, res) => {
 
 
 app.get('/profile', verifyToken, (req, res) => {
-    const userId = req.session.userId;
-
+    const userId = req.session.user.id;
+    console.log(userId);
+    console.log(req.session.user);
     connection.query('SELECT first_name, role FROM users WHERE id = ?', [userId], (error, results) => {
         if (error) {
             console.error('Error fetching name from database:', error.stack);
@@ -602,16 +618,16 @@ app.post('/request-mat', verifyToken, (req, res) => {
         quantity,
     };
 
-    
+
     connection.query('INSERT INTO requestmaterial SET ?', requestmaterial, (error, results) => {
         if (error) {
             console.error('Error inserting item into database: ' + error.stack);
             return res.status(500).json({ error: 'Internal server error' });
         }
         console.log('Item added to database with ID: ' + results.insertId);
-       
+
         sendEmail('theo48173@gmail.com', requestmaterial);
-       
+
         res.status(201).json({ message: 'Request added successfully', item: requestmaterial });
     });
 })
@@ -1227,7 +1243,7 @@ app.get("/stock-count", verifyToken, (req, res) => {
             console.error('Error fetching items from database ');
             return res.status(500).json({ error: "Internal server error" })
         }
-        res.json({results});
+        res.json({ results });
     })
 });
 
