@@ -963,7 +963,7 @@ function generatePDF(data) {
             doc.rect(50, 580, 514, 30).stroke();
             doc.font('Times-Bold').fontSize(10).text('If any difference is found in quantity, quality and rate etc. it should be notified in writing withing 24 Hours. No claim will be entertained thereafter', 52, 585)
             doc.font('Times-Bold').fontSize(10).text('For LIGHTFORCE BUILDINT PRIVATE LIMITED', 52, 615)
-            doc.image('C:/Users/shubh/Desktop/New folder/inventory/sign.png', 60, 630, { width: 112, height: 80 });
+            doc.image('./sign.png', 60, 630, { width: 112, height: 80 });
             doc.font('Times-Bold').fontSize(10).text('Authorized Signatory', 60, 720)
             doc.font('Times-Bold').fontSize(10).text('Received By : _____________', 240, 720, { width: 280, height: 5, align: 'right' })
 
