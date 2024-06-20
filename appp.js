@@ -15,6 +15,8 @@ const excelToJson = require('convert-excel-to-json');
 const xlsx = require('xlsx');
 const cors = require('cors');
 const session = require('express-session');
+const path = require('path');
+
 /// hellol
 
 app.use(bodyParser.json());
@@ -906,7 +908,7 @@ function generatePDF(data) {
         });
         data.forEach(row => {
             doc.rect(50, 50, 514, 700).stroke();
-            doc.image('C:/Users/shubh/Desktop/New folder/inventory/buildint.png', 457, 55, { width: 100, height: 25 });
+            doc.image('./buildint.png', 457, 55, { width: 100, height: 25 });
             doc.font('Times-Bold').fontSize(14).text('DELIVERY CHALLAN', 55, 115, { width: 504, height: 35, align: 'left' })
             doc.font('Times-Bold').fontSize(14).text('Lightforce Buildint Pvt Ltd', 55, 130, { width: 504, height: 35, align: 'left' })
             doc.font('Times-Bold').fontSize(10).text('408-412, Srishti Palza, Off Saki Vihar Road,', 55, 147, { width: 504, height: 35, align: 'left' })
