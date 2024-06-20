@@ -973,10 +973,10 @@ function generatePDF(data) {
 
     });
 }
-app.post('/generatepdf', async (req, res) => {
+app.get('/generatepdf', async (req, res) => {
     try {
         console.log("inside try block")
-        const { chalan_id } = req.body;
+        const { chalan_id } = req.query;
         const query = 'SELECT * FROM stocks WHERE chalan_id = ?';
         const values = [chalan_id];
         const results = {};
