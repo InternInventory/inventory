@@ -1649,6 +1649,25 @@ app.get('/supp-count', (req, res) => {
 })
 
 
+app.get('/itemid-dropdown', (req, res) => {
+    const { selectedValue } = req.query;
+
+    if (!selectedValue) {
+        return res.status(400).json({ message: 'selectedValue is required' });
+    }
+
+    const query = 'SELECT item_id FROM stocks WHERE item_name = ?';
+    connection.query(query, [selectedValue], (err, results) => {
+        if (err) {
+            console.error('Error executing query:', err);
+            return res.status(500).json({ error: 'Internal Server Error' });
+        }
+
+        res.status(200).json(results);
+    });
+});
+
+
 
 const port = process.env.PORT || 5050;
 app.listen(port, () => {
