@@ -1199,26 +1199,41 @@ app.post("/api/add-item", verifyToken, (req, res) => {
         return;
     }
 
-    // Create a SQL query to insert data into the database
-    const query = `INSERT INTO stocks (item_id, item_name, supplier_id, stock_holder_name, stock_holder_contact, stock_status, working_status, rack, slot ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ? )`;
-
-    // Execute the query
-    connection.query(
-        query,
-        [item_id, item_name, supplier_id, stock_holder_name, stock_holder_contact, stock_status, working_status, rack, slot],
-        (error, results) => {
-            if (error) {
-                console.error("Error executing query:", error);
-                res.status(500).json({ error: "Internal server error" });
-                return;
-            }
-
-            // Data inserted successfully
-            res.status(201).json({ message: "Item inserted successfully" });
+    // Check if the item_id already exists
+    const checkQuery = 'SELECT * FROM stocks WHERE item_id = ?';
+    connection.query(checkQuery, [item_id], (checkError, checkResults) => {
+        if (checkError) {
+            console.error("Error executing query:", checkError);
+            res.status(500).json({ error: "Internal server error" });
+            return;
         }
-    );
-});
 
+        if (checkResults.length > 0) {
+            // item_id already exists
+            res.status(409).json({ error: "Item ID already exists" });
+            return;
+        }
+
+        // Create a SQL query to insert data into the database
+        const query = `INSERT INTO stocks (item_id, item_name, supplier_id, stock_holder_name, stock_holder_contact, stock_status, working_status, rack, slot ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ? )`;
+
+        // Execute the query
+        connection.query(
+            query,
+            [item_id, item_name, supplier_id, stock_holder_name, stock_holder_contact, stock_status, working_status, rack, slot],
+            (error, results) => {
+                if (error) {
+                    console.error("Error executing query:", error);
+                    res.status(500).json({ error: "Internal server error" });
+                    return;
+                }
+
+                // Data inserted successfully
+                res.status(201).json({ message: "Item inserted successfully" });
+            }
+        );
+    });
+});
 app.get("/supplier-dropdown", (req, res) => {
     connection.query("SELECT distinct name, id FROM suppliers", (error, results) => {
         if (error) {
@@ -1648,7 +1663,6 @@ app.get('/supp-count', (req, res) => {
     })
 })
 
-
 app.get('/itemid-dropdown', (req, res) => {
     const { selectedValue } = req.query;
 
@@ -1662,7 +1676,6 @@ app.get('/itemid-dropdown', (req, res) => {
             console.error('Error executing query:', err);
             return res.status(500).json({ error: 'Internal Server Error' });
         }
-
         res.status(200).json(results);
     });
 });
