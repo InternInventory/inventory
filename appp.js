@@ -432,7 +432,7 @@ app.get('/stocks', verifyToken, (req, res) => {
 
 app.get('/history', verifyToken, (req, res) => {
 
-    connection.query('SELECT * FROM stocks ORDER BY added_date DESC', (error, results) => {
+    connection.query('SELECT item_id, item_name, supplier_id, project_name, cost, reciever_name, reciever_contact, Location, chalan_id, description, m_o_d, updated_date, id FROM stocks WHERE updated_date IS NOT NULL ORDER BY updated_date DESC', (error, results) => {
         if (error) {
             console.error('Error fetching items from database:', error.stack);
             return res.status(500).json({ error: 'Internal server error' });
