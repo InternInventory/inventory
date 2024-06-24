@@ -16,7 +16,7 @@ const xlsx = require('xlsx');
 const cors = require('cors');
 const session = require('express-session');
 const path = require('path');
-
+const ExcelJS = require('exceljs');
 /// hellol
 
 app.use(bodyParser.json());
@@ -1692,6 +1692,54 @@ app.get('/po-history', verifyToken, (req, res) => {
     })
 });
 
+
+app.get('/download-history', (req, res) => {
+    const query = 'SELECT * FROM stocks WHERE updated_date IS NOT NULL';
+    
+    connection.query(query, async (err, results) => {
+        if (err) {
+            console.error('Error executing query:', err);
+            res.status(500).send('Error executing query');
+            return;
+        }
+
+        // Create a new Excel workbook and worksheet
+        const workbook = new ExcelJS.Workbook();
+        const worksheet = workbook.addWorksheet('History Data');
+
+        // Define columns
+        worksheet.columns = [
+            { header: 'Item ID', key: 'item_id', width: 10 },
+            { header: 'Item Name', key: 'item_name', width: 30 },
+            { header: 'Supplier ID', key: 'supplier_id', width: 15 },
+            { header: 'Project Name', key: 'project_name', width: 30 },
+            { header: 'Cost', key: 'cost', width: 10 },
+            { header: 'Receiver Name', key: 'reciever_name', width: 30 },
+            { header: 'Receiver Contact', key: 'reciever_contact', width: 20 },
+            { header: 'Location', key: 'Location', width: 20 },
+            { header: 'Chalan ID', key: 'chalan_id', width: 15 },
+            { header: 'Description', key: 'description', width: 40 },
+            { header: 'M_o_D', key: 'm_o_d', width: 15 },
+            { header: 'Updated Date', key: 'updated_date', width: 20 },
+            { header: 'ID', key: 'id', width: 10 }
+        ];
+
+        // Add rows to the worksheet
+        results.forEach(row => {
+            worksheet.addRow(row);
+        });
+
+        // Set the response headers to indicate a file attachment with a .xlsx extension
+        res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        res.setHeader('Content-Disposition', 'attachment; filename=history.xlsx');
+
+        // Write the workbook to the response
+        await workbook.xlsx.write(res);
+
+        // End the response
+        res.end();
+    });
+});
 const port = process.env.PORT || 5050;
 app.listen(port, () => {
     console.log(`Server is running on port ${port}`);
