@@ -1026,7 +1026,7 @@ app.get('/send-material-history', verifyToken, (req, res) => {
         }
         res.json({ history: results })
     })
-})
+});
 
 app.get('/out-of-stock', verifyToken, (req, res) => {
 
@@ -1676,11 +1676,21 @@ app.get('/itemid-dropdown', (req, res) => {
             console.error('Error executing query:', err);
             return res.status(500).json({ error: 'Internal Server Error' });
         }
-        res.status(200).json(results);
+        res.status(200).json({results});
     });
 });
 
+app.get('/po-history', verifyToken, (req, res) => {
 
+
+    connection.query("SELECT * FROM po_list WHERE status = '1' OR status = '2' ORDER BY updated_at DESC", (error, results) => {
+        if (error) {
+            console.error('Error fetching items from database ');
+            return res.status(500).json({ error: "Internal server error" })
+        }
+        res.json({ history: results })
+    })
+});
 
 const port = process.env.PORT || 5050;
 app.listen(port, () => {
