@@ -17,6 +17,8 @@ const cors = require('cors');
 const session = require('express-session');
 const path = require('path');
 const ExcelJS = require('exceljs');
+const bwipjs = require('bwip-js');
+const archiver = require('archiver');
 /// hellol
 
 app.use(bodyParser.json());
@@ -1255,7 +1257,7 @@ app.get("/item-dropdown", (req, res) => {
 })
 
 app.get("/stock-count", verifyToken, (req, res) => {
-    connection.query("SELECT distinct item_name, COUNT(item_name) AS quantity FROM stocks GROUP BY item_name;", (error, results) => {
+    connection.query("SELECT distinct item_name, COUNT(item_name) AS quantity FROM stocks GROUP BY item_name ORDER BY item_name ASC;", (error, results) => {
         if (error) {
             console.error('Error fetching items from database ');
             return res.status(500).json({ error: "Internal server error" })
@@ -1694,7 +1696,7 @@ app.get('/po-history', verifyToken, (req, res) => {
 
 
 app.get('/download-history', (req, res) => {
-    const query = 'SELECT * FROM stocks WHERE updated_date IS NOT NULL';
+    const query = 'SELECT * FROM stocks WHERE updated_date IS NOT NULL ORDER BY updated_date DESC';
     
     connection.query(query, async (err, results) => {
         if (err) {
@@ -1740,6 +1742,160 @@ app.get('/download-history', (req, res) => {
         res.end();
     });
 });
+
+app.post('/barcode', (req, res) => {
+    const { data, bcType } = req.body;
+
+    if (!data) {
+        return res.status(400).send('Body parameter "data" is required.');
+    }
+
+    const text = JSON.stringify(data);
+
+    bwipjs.toBuffer({
+        bcid: bcType || 'code128',  // Barcode type, default is code128
+        text: text,                 // Text to encode
+        scale: 3,                   // 3x scaling factor
+        height: 10,                 // Bar height, in millimeters
+        includetext: true,          // Show human-readable text
+        textxalign: 'center',       // Align text to the center
+    }, (err, png) => {
+        if (err) {
+            res.status(500).send(err.message);
+        } else {
+            res.writeHead(200, {
+                'Content-Type': 'image/png',
+                'Content-Length': png.length
+            });
+            res.end(png);
+        }
+    });
+});
+
+app.post('/barcodes', (req, res) => {
+    const {name, year, type, quantity } = req.body;
+
+    if (!name || !year || !type || !quantity) {
+        return res.status(400).send('All fields (id, name, year, type, quantity) are required.');
+    }
+
+    const output = fs.createWriteStream(path.join(__dirname, 'barcodes.zip'));
+    const archive = archiver('zip', { zlib: { level: 9 } });
+
+    output.on('close', () => {
+        res.download(path.join(__dirname, 'barcodes.zip'), 'barcodes.zip', (err) => {
+            if (err) {
+                res.status(500).send(err.message);
+            } else {
+                fs.unlinkSync(path.join(__dirname, 'barcodes.zip')); // Clean up the zip file after download
+            }
+        });
+    });
+
+    archive.on('error', (err) => {
+        res.status(500).send(err.message);
+    });
+
+    archive.pipe(output);
+
+    const generateBarcode = (index) => {
+        return new Promise((resolve, reject) => {
+            const formattedIndex = String(index).padStart(3, '0'); // Pad the index to three digits
+            const barcodeText = `${name}/${year}/${type}/${formattedIndex}`; // Format the barcode text
+
+            bwipjs.toBuffer({
+                bcid: 'code128',        // Barcode type
+                text: barcodeText,      // Text to encode
+                scale: 3,               // 3x scaling factor
+                height: 10,             // Bar height, in millimeters
+                includetext: true,      // Show human-readable text
+                textxalign: 'center',   // Align text to the center
+            }, (err, png) => {
+                if (err) {
+                    reject(err);
+                } else {
+                    const filename = `barcode-${formattedIndex}.png`;
+                    archive.append(png, { name: filename });
+                    resolve();
+                }
+            });
+        });
+    };
+
+    const generateBarcodes = async () => {
+        for (let i = 1; i <= quantity; i++) {
+            await generateBarcode(i);
+        }
+        archive.finalize();
+    };
+
+    generateBarcodes().catch(err => res.status(500).send(err.message));
+});
+
+app.post('/generate-barcodes', async (req, res) => {
+    const { name, year, type, sr_no_start, count } = req.body;
+
+    if (!name || !year || !type || !sr_no_start || !count) {
+        return res.status(400).json({ error: 'Missing required fields' });
+    }
+
+    let barcodes = [];
+    let promises = [];
+
+    for (let i = 0; i < count; i++) {
+        const sr_no = (sr_no_start + i).toString().padStart(3, '0');
+        const barcode = `${name}/${year}/${type}/${sr_no}`;
+
+        barcodes.push([name, year, type, parseInt(sr_no), barcode]);
+
+        promises.push(new Promise((resolve, reject) => {
+            bwipjs.toBuffer({
+                bcid: 'code128', // Barcode type
+                text: barcode,   // Text to encode
+                scale: 3,        // 3x scaling factor
+                height: 10,      // Bar height, in millimeters
+                includetext: true, // Show human-readable text
+                textxalign: 'center', // Always good to set this
+            }, function (err, png) {
+                if (err) {
+                    reject(err);
+                } else {
+                    fs.writeFileSync(`./barcodes/${barcode}.png`, png);
+                    resolve();
+                }
+            });
+        }));
+    }
+
+    Promise.all(promises)
+        .then(() => {
+            const sql = 'INSERT INTO barcode (name, year, type, sr_no, barcode) VALUES ?';
+            connection.query(sql, [barcodes], (err, results) => {
+                if (err) {
+                    console.error('Error inserting into MySQL:', err);
+                    return res.status(500).json({ error: 'Database insert error' });
+                }
+                res.json({ message: 'Barcodes generated and stored successfully', barcodes });
+            });
+        })
+        .catch(err => {
+            console.error('Error generating barcodes:', err);
+            res.status(500).json({ error: 'Barcode generation error' });
+        });
+});
+
+app.get('/download-barcode/:barcode', (req, res) => {
+    const { barcode } = req.params;
+    const filePath = path.join(__dirname, 'barcodes', `${barcode}.png`);
+
+    res.download(filePath, err => {
+        if (err) {
+            console.error('Error downloading file:', err);
+            res.status(500).json({ error: 'File download error' });
+        }
+    });
+});
+
 const port = process.env.PORT || 5050;
 app.listen(port, () => {
     console.log(`Server is running on port ${port}`);
