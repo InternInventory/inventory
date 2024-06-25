@@ -842,7 +842,7 @@ app.post('/add-supplier', verifyToken, (req, res) => {
 
 app.get('/supplier-list', verifyToken, (req, res) => {
 
-    connection.query("SELECT * FROM suppliers WHERE status = 1", (error, results) => {
+    connection.query("SELECT * FROM suppliers WHERE status = 1 ORDER BY name", (error, results) => {
         if (error) {
             console.error('Error fetching itemrs from database ,error.stack');
             return res.status(500).json({ error: "Internal server error" })
@@ -1646,7 +1646,7 @@ app.get("/item-id-dropdown", (req, res) => {
 })
 
 app.get("/notifications", (req, res) => {
-    connection.query("SELECT item_name, count(item_name) AS quantity FROM stocks GROUP BY item_name HAVING COUNT(item_name) < 20", (error, results) => {
+    connection.query("SELECT item_name, count(item_name) AS quantity FROM stocks GROUP BY item_name HAVING COUNT(item_name) < 20 order by item_name", (error, results) => {
         if (error) {
             console.error('Error fetching items from database ');
             return res.status(500).json({ error: "Internal server error" })
