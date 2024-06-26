@@ -1672,13 +1672,13 @@ app.get('/itemid-dropdown', (req, res) => {
         return res.status(400).json({ message: 'selectedValue is required' });
     }
 
-    const query = 'SELECT item_id FROM stocks WHERE item_name = ?';
+    const query = 'SELECT item_id FROM stocks WHERE item_status = 0 AND item_name = ? ';
     connection.query(query, [selectedValue], (err, results) => {
         if (err) {
             console.error('Error executing query:', err);
             return res.status(500).json({ error: 'Internal Server Error' });
         }
-        res.status(200).json({results});
+        res.status(200).json({ results });
     });
 });
 
@@ -1697,7 +1697,7 @@ app.get('/po-history', verifyToken, (req, res) => {
 
 app.get('/download-history', (req, res) => {
     const query = 'SELECT * FROM stocks WHERE updated_date IS NOT NULL ORDER BY updated_date DESC';
-    
+
     connection.query(query, async (err, results) => {
         if (err) {
             console.error('Error executing query:', err);
@@ -1773,7 +1773,7 @@ app.post('/barcode', (req, res) => {
 });
 
 app.post('/barcodes', (req, res) => {
-    const {name, year, type, quantity } = req.body;
+    const { name, year, type, quantity } = req.body;
 
     if (!name || !year || !type || !quantity) {
         return res.status(400).send('All fields (id, name, year, type, quantity) are required.');
