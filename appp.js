@@ -19,6 +19,8 @@ const path = require('path');
 const ExcelJS = require('exceljs');
 const bwipjs = require('bwip-js');
 const archiver = require('archiver');
+const { createCanvas } = require('canvas');
+const Barcode = require('jsbarcode');
 /// hellol
 
 app.use(bodyParser.json());
@@ -434,7 +436,7 @@ app.get('/stocks', verifyToken, (req, res) => {
 
 app.get('/history', verifyToken, (req, res) => {
 
-    connection.query('SELECT item_id, item_name, supplier_id, project_name, cost, reciever_name, reciever_contact, Location, chalan_id, description, m_o_d, updated_date, id FROM stocks WHERE updated_date IS NOT NULL ORDER BY updated_date DESC', (error, results) => {
+    connection.query('SELECT * FROM stocks WHERE updated_date IS NOT NULL ORDER BY updated_date DESC', (error, results) => {
         if (error) {
             console.error('Error fetching items from database:', error.stack);
             return res.status(500).json({ error: 'Internal server error' });
@@ -1860,7 +1862,7 @@ app.post('/generate-barcodes', async (req, res) => {
                 if (err) {
                     reject(err);
                 } else {
-                    fs.writeFileSync(`./barcodes/${barcode}.png`, png);
+                    fs.writeFileSync(`./barcodes.png`, png);
                     resolve();
                 }
             });
@@ -1886,7 +1888,7 @@ app.post('/generate-barcodes', async (req, res) => {
 
 app.get('/download-barcode/:barcode', (req, res) => {
     const { barcode } = req.params;
-    const filePath = path.join(__dirname, 'barcodes', `${barcode}.png`);
+    const filePath = path.join(__dirname, 'barcodes', `barcode.png`);
 
     res.download(filePath, err => {
         if (err) {
@@ -1896,6 +1898,85 @@ app.get('/download-barcode/:barcode', (req, res) => {
     });
 });
 
+app.set('view engine', 'ejs');
+
+// Serve static files from the public directory
+app.use(express.static(path.join(__dirname, 'public')));
+  
+// Route to handle form submission
+app.post('/generate', (req, res) => {
+    const { name, age } = req.body;
+    const jsonData = { name, age };
+    const jsonString = JSON.stringify(jsonData);
+
+    // Generate QR code from JSON string
+    bwipjs.toBuffer({
+        bcid: 'qrcode',       // Barcode type
+        text: jsonString,     // Text to encode
+        scale: 3,             // 3x scaling factor
+        version: 5,           // Version (1 - 40)
+        includetext: false,   // Show human-readable text
+        padding: 4            // Padding (default 20)
+    }, function (err, png) {
+        if (err) {
+            console.error(err);
+            res.status(500).send('Error generating barcode');
+            return;
+        } 
+
+        // Save the QR code image to the public directory
+        const filePath = path.join(__dirname, 'public', 'qrcode.png');
+        fs.writeFile(filePath, png, function (err) {
+            if (err) {
+                console.error(err);
+                res.status(500).send('Error saving barcode image');
+                return;
+            }
+            // Render the result page with the generated barcode
+            res.render('result', { jsonData, imageUrl: '/qrcode.png' });
+        });
+    });
+}); 
+
+app.get('/barcode/:id', (req, res) => {
+    const { id } = req.params;
+  
+    // Fetch item details from database
+    connection.query('SELECT * FROM stocks WHERE id = ?', [id], (err, results, fields) => {
+      if (err) {
+        console.error('Error retrieving item details:', err);
+        return res.status(500).json({ error: 'Internal server error' });
+      }
+  
+      if (results.length === 0) {
+        return res.status(404).json({ error: 'Item not found' });
+      }
+  
+      const item = results[0];
+      const added_date = item.added_date; // Assuming added_date is in a suitable format
+  
+      // Create PNG barcode with JSON data embedded
+      const canvas = createCanvas(400, 200);
+      const ctx = canvas.getContext('2d');
+      ctx.fillStyle = '#FFFFFF';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      
+      // Example: Embedding JSON data into barcode
+      const barcodeData = {
+        id,
+        added_date
+      };
+  
+      ctx.fillStyle = '#000000';
+      ctx.font = '20px Arial';
+      ctx.fillText(JSON.stringify(barcodeData), 50, 100);
+  
+      // Send PNG as response
+      res.set('Content-Type', 'image/png');
+      canvas.createPNGStream().pipe(res);
+    });
+  });
+  
 const port = process.env.PORT || 5050;
 app.listen(port, () => {
     console.log(`Server is running on port ${port}`);
