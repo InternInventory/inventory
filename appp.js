@@ -1546,13 +1546,15 @@ app.post('/download-report', (req, res) => {
 
 
 app.post("/accept-request", (req, res) => {
-    const { id } = req.body;
+    const { id, remark } = req.body;
 
+    const approved_date = new Date()
+    console.log(approved_date);
 
     // Update status of query in database
-    const sql = `UPDATE requestmaterial SET approve_status = 1 WHERE id = ?`;
+    const sql = `UPDATE requestmaterial SET approve_status = 1, remark = ?, approved_date = ? WHERE id = ?`;
 
-    connection.query(sql, [id], (err, result) => {
+    connection.query(sql, [remark, approved_date, id], (err, result) => {
         if (err) {
             console.error('Error updating query status: ', err);
             return res.status(500).json({ message: 'Error updating query status' });
@@ -1568,13 +1570,15 @@ app.post("/accept-request", (req, res) => {
 })
 
 app.post("/delete-request", verifyToken, (req, res) => {
-    const { id } = req.body;
-
+    const { id, remark } = req.body;
+    
+    const approved_date = new Date()
+    console.log(approved_date);
 
     // Update status of query in database
-    const sql = `UPDATE requestmaterial SET approve_status = 2 WHERE id = ?`;
+    const sql = `UPDATE requestmaterial SET approve_status = 2, remark = ?, approved_date = ? WHERE id = ?`;
 
-    connection.query(sql, [id], (err, result) => {
+    connection.query(sql, [remark, approved_date, id], (err, result) => {
         if (err) {
             console.error('Error updating query status: ', err);
             return res.status(500).json({ message: 'Error updating query status' });
