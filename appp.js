@@ -1571,7 +1571,7 @@ app.post("/accept-request", (req, res) => {
 
 app.post("/delete-request", verifyToken, (req, res) => {
     const { id, remark } = req.body;
-    
+
     const approved_date = new Date()
     console.log(approved_date);
 
@@ -1778,8 +1778,8 @@ app.post('/barcode', (req, res) => {
     });
 });
 
-app.post('/barcodes', (req, res) => {
-    const { name, year, type, quantity } = req.body;
+app.get('/barcodes', (req, res) => {
+    const { name, year, type, quantity } = req.query;
 
     if (!name || !year || !type || !quantity) {
         return res.status(400).send('All fields (id, name, year, type, quantity) are required.');
@@ -1906,7 +1906,7 @@ app.set('view engine', 'ejs');
 
 // Serve static files from the public directory
 app.use(express.static(path.join(__dirname, 'public')));
-  
+
 // Route to handle form submission
 app.post('/generate', (req, res) => {
     const { name, age } = req.body;
@@ -1926,7 +1926,7 @@ app.post('/generate', (req, res) => {
             console.error(err);
             res.status(500).send('Error generating barcode');
             return;
-        } 
+        }
 
         // Save the QR code image to the public directory
         const filePath = path.join(__dirname, 'public', 'qrcode.png');
@@ -1940,47 +1940,93 @@ app.post('/generate', (req, res) => {
             res.render('result', { jsonData, imageUrl: '/qrcode.png' });
         });
     });
-}); 
+});
 
 app.get('/barcode/:id', (req, res) => {
     const { id } = req.params;
-  
+
     // Fetch item details from database
     connection.query('SELECT * FROM stocks WHERE id = ?', [id], (err, results, fields) => {
-      if (err) {
-        console.error('Error retrieving item details:', err);
-        return res.status(500).json({ error: 'Internal server error' });
-      }
-  
-      if (results.length === 0) {
-        return res.status(404).json({ error: 'Item not found' });
-      }
-  
-      const item = results[0];
-      const added_date = item.added_date; // Assuming added_date is in a suitable format
-  
-      // Create PNG barcode with JSON data embedded
-      const canvas = createCanvas(400, 200);
-      const ctx = canvas.getContext('2d');
-      ctx.fillStyle = '#FFFFFF';
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
-      
-      // Example: Embedding JSON data into barcode
-      const barcodeData = {
-        id,
-        added_date
-      };
-  
-      ctx.fillStyle = '#000000';
-      ctx.font = '20px Arial';
-      ctx.fillText(JSON.stringify(barcodeData), 50, 100);
-  
-      // Send PNG as response
-      res.set('Content-Type', 'image/png');
-      canvas.createPNGStream().pipe(res);
+        if (err) {
+            console.error('Error retrieving item details:', err);
+            return res.status(500).json({ error: 'Internal server error' });
+        }
+
+        if (results.length === 0) {
+            return res.status(404).json({ error: 'Item not found' });
+        }
+
+        const item = results[0];
+        const added_date = item.added_date; // Assuming added_date is in a suitable format
+
+        // Create PNG barcode with JSON data embedded
+        const canvas = createCanvas(400, 200);
+        const ctx = canvas.getContext('2d');
+        ctx.fillStyle = '#FFFFFF';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        // Example: Embedding JSON data into barcode
+        const barcodeData = {
+            id,
+            added_date
+        };
+
+        ctx.fillStyle = '#000000';
+        ctx.font = '20px Arial';
+        ctx.fillText(JSON.stringify(barcodeData), 50, 100);
+
+        // Send PNG as response
+        res.set('Content-Type', 'image/png');
+        canvas.createPNGStream().pipe(res);
     });
-  });
-  
+});
+
+app.post('/send-item', (req, res) => {
+    const { quantity, item_id, item_name, project_name, cost, reciever_name, reciever_contact, Location, chalan_id, description, m_o_d } = req.body;
+
+    // Array to hold multiple rows
+    const rows = [];
+
+    for (let i = 0; i < quantity; i++) {
+        items.forEach(item => {
+            const row = [
+                item_id,
+                item_name,
+                project_name,
+                cost,
+                reciever_name,
+                reciever_contact,
+                Location,
+                chalan_id,
+                description,
+                m_o_d,
+               // 1 // item_status set to 1
+            ];
+            rows.push(row);
+        });
+    }
+
+    // SQL query to insert multiple rows
+    const query = `UPDATE stocks SET item_status = ?, item_name=?, project_name=?, cost=?, reciever_name=?, reciever_contact=?, Location=?, chalan_id=?, description=?, m_o_d=? WHERE item_id=?`;
+
+    db.query(sql, [rows], (err, result) => {
+        if (err) {
+            return res.status(500).send(err);
+        }
+        res.send('Items inserted successfully with item_status set to 1');
+    });
+});
+
+app.get("/barcode-table", (req, res) => {
+    connection.query("SELECT * FROM barcode", (error, results) => {
+        if (error) {
+            console.error('Error fetching items from database ');
+            return res.status(500).json({ error: "Internal server error" })
+        }
+        res.json({ users: results })
+    })
+})
+
 const port = process.env.PORT || 5050;
 app.listen(port, () => {
     console.log(`Server is running on port ${port}`);
