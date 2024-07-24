@@ -1782,7 +1782,7 @@ app.get('/barcodes', (req, res) => {
     const { name, year, type, quantity } = req.query;
 
     if (!name || !year || !type || !quantity) {
-        return res.status(400).send('All fields (id, name, year, type, quantity) are required.');
+        return res.status(400).send('All fields (name, year, type, quantity) are required.');
     }
 
     const output = fs.createWriteStream(path.join(__dirname, 'barcodes.zip'));
@@ -2026,6 +2026,22 @@ app.get("/barcode-table", (req, res) => {
         res.json({ users: results })
     })
 })
+
+app.get('/select-date', (req,res) => {
+    const {date} = req.query;
+    if(!date){
+        return res.status(400).json({error: 'Date parameter is required'});
+    }
+    const query = 'SELECT barcode, date_created FROM barcode WHERE DATE(date_created) = ?';
+    connection.execute(query, [date], (err, results)=>{
+        if(err){
+            console.error(err);
+            return res.status(500).json({error: 'Database error'});
+
+        }
+        res.json(results);
+    });
+});
 
 const port = process.env.PORT || 5050;
 app.listen(port, () => {
