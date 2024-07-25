@@ -2039,7 +2039,7 @@ app.get('/select-date', (req,res) => {
             return res.status(500).json({error: 'Database error'});
 
         }
-        res.json(results);
+        res.json({barcodes: results});
     });
 });
 
