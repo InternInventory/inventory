@@ -2000,7 +2000,7 @@ app.post('/send-item', (req, res) => {
                 chalan_id,
                 description,
                 m_o_d,
-               // 1 // item_status set to 1
+                // 1 // item_status set to 1
             ];
             rows.push(row);
         });
@@ -2027,19 +2027,25 @@ app.get("/barcode-table", (req, res) => {
     })
 })
 
-app.get('/select-date', (req,res) => {
-    const {date} = req.query;
-    if(!date){
-        return res.status(400).json({error: 'Date parameter is required'});
+app.get('/select-date', (req, res) => {
+    const { date } = req.query;
+    let query;
+    let queryParams = [];
+   
+    if (date) {
+        query = 'SELECT barcode, date_created FROM barcode WHERE DATE(date_created) = ?';
+        queryParams = [date];
+    } else {
+        query = 'SELECT barcode, date_created FROM barcode';
     }
-    const query = 'SELECT barcode, date_created FROM barcode WHERE DATE(date_created) = ?';
-    connection.execute(query, [date], (err, results)=>{
-        if(err){
+    
+    connection.execute(query, [date], (err, results) => {
+        if (err) {
             console.error(err);
-            return res.status(500).json({error: 'Database error'});
+            return res.status(500).json({ error: 'Database error' });
 
         }
-        res.json({barcodes: results});
+        res.json({ barcodes: results });
     });
 });
 
