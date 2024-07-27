@@ -2136,10 +2136,9 @@ app.get('/hftday/:username', (req, res) => {
             return res.status(404).json({ message: 'Record not found' });
         }
 
-        return res.json(results[0]);
+        return res.json({ result: results[0], message: 'Record retrieved successfully' });
     });
 });
-
 const port = process.env.PORT || 5050;
 app.listen(port, () => {
     console.log(`Server is running on port ${port}`);
