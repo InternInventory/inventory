@@ -2097,8 +2097,6 @@ app.post('/hftday', (req, res) => {
         return res.status(400).json({ message: 'Username, day, date, and comment are required' });
     }
 
-    
-
     // Update the record in the MySQL database
     const sql = `UPDATE highft_login SET day = ?, comment = ?, date = ? WHERE username = ?`;
 
@@ -2110,12 +2108,35 @@ app.post('/hftday', (req, res) => {
             return res.status(500).json({ message: 'Error updating data in the database.' });
         }
 
-
         if (results.affectedRows === 0) {
             return res.status(404).json({ message: 'Record not found' });
         }
+        return res.json({ message: 'Attendance successfully' });
+    });
+});
+app.get('/hftday/:username', (req, res) => {
+    const username = req.params.username;
 
-        return res.json({ message: 'Item updated successfully' });
+    // Validate input
+    if (!username) {
+        return res.status(400).json({ message: 'Username is required' });
+    }
+
+    // Retrieve specific fields from the MySQL database
+    const sql = `SELECT day, comment, date FROM highft_login WHERE username = ?`;
+    const values = [username];
+
+    connection.query(sql, values, (err, results) => {
+        if (err) {
+            console.error('Error retrieving data from MySQL:', err);
+            return res.status(500).json({ message: 'Error retrieving data from the database.' });
+        }
+
+        if (results.length === 0) {
+            return res.status(404).json({ message: 'Record not found' });
+        }
+
+        return res.json(results[0]);
     });
 });
 
