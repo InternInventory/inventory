@@ -2051,33 +2051,6 @@ app.get('/select-date', (req, res) => {
 
 //////////////////////////////////////////////hftsatya///////////////////////////////////////////////////////////
 
-const express = require('express');
-const mysql = require('mysql2');
-const jwt = require('jsonwebtoken'); // Ensure you have jsonwebtoken installed
-const app = express();
-
-const port = 3000;
-
-// Create MySQL connection
-const connection = mysql.createConnection({
-    host: "3.7.158.221",
-    user: "admin_buildINT",
-    password: "buildINT@2023$",
-    database: "inventory",
-});
-
-connection.connect((err) => {
-    if (err) {
-        console.error('Error connecting to MySQL:', err);
-        return;
-    }
-    console.log('Connected to MySQL');
-});
-
-// Middleware to parse JSON bodies
-app.use(express.json());
-
-// POST endpoint for login
 app.post('/hftlogin', (req, res) => {
     const { username, password } = req.body;
 
@@ -2097,7 +2070,7 @@ app.post('/hftlogin', (req, res) => {
         const user = results[0];
 
         // User is authenticated; generate a JWT token
-        const token = jwt.sign({ id: user.id, username: user.username, role: user.role }, 'secretkey', {
+        const token = jwt.sign({ id: user.id, username: user.username }, 'secretkey', {
             expiresIn: '12h', // Token expires in 12 hours
         });
 
@@ -2112,13 +2085,10 @@ app.post('/hftlogin', (req, res) => {
                 return;
             }
             
-            // Send response including role
-            res.status(200).json({ token, expirationTime, role: user.role });
+            res.status(200).json({ token, expirationTime });
         });
     });
 });
-
-// POST endpoint to update a record
 app.post('/hftday', (req, res) => {
     const { username, day, comment, date } = req.body;
 
@@ -2129,6 +2099,7 @@ app.post('/hftday', (req, res) => {
 
     // Update the record in the MySQL database
     const sql = `UPDATE highft_login SET day = ?, comment = ?, date = ? WHERE username = ?`;
+
     const values = [day, comment, date, username];
 
     connection.query(sql, values, (err, results) => {
@@ -2140,12 +2111,9 @@ app.post('/hftday', (req, res) => {
         if (results.affectedRows === 0) {
             return res.status(404).json({ message: 'Record not found' });
         }
-
-        return res.json({ result: "result", message: 'Item updated successfully' });
+        return res.json({ message: 'Attendance successfully' });
     });
 });
-
-// GET endpoint to retrieve specific fields of a record
 app.get('/hftday/:username', (req, res) => {
     const username = req.params.username;
 
@@ -2154,54 +2122,23 @@ app.get('/hftday/:username', (req, res) => {
         return res.status(400).json({ message: 'Username is required' });
     }
 
-    // First, retrieve the user role from the database
-    const getUserRoleSql = `SELECT role FROM highft_login WHERE username = ?`;
-    connection.query(getUserRoleSql, [username], (err, roleResults) => {
+    // Retrieve specific fields from the MySQL database
+    const sql = `SELECT day, comment, date FROM highft_login WHERE username = ?`;
+    const values = [username];
+
+    connection.query(sql, values, (err, results) => {
         if (err) {
-            console.error('Error retrieving user role from MySQL:', err);
-            return res.status(500).json({ message: 'Error retrieving user role from the database.' });
+            console.error('Error retrieving data from MySQL:', err);
+            return res.status(500).json({ message: 'Error retrieving data from the database.' });
         }
 
-        if (roleResults.length === 0) {
-            return res.status(404).json({ message: 'User not found' });
+        if (results.length === 0) {
+            return res.status(404).json({ message: 'Record not found' });
         }
 
-        const userRole = roleResults[0].role;
-
-        let sql;
-        let values;
-
-        // Check the user role and prepare the SQL query accordingly
-        if (userRole === 'Admin') {
-            sql = `SELECT day, comment, date, role, username FROM highft_login`;
-            values = [];
-        } else {
-            sql = `SELECT day, comment, role, date FROM highft_login WHERE username = ?`;
-            values = [username];
-        }
-
-        // Retrieve the data from the MySQL database
-        connection.query(sql, values, (err, results) => {
-            if (err) {
-                console.error('Error retrieving data from MySQL:', err);
-                return res.status(500).json({ message: 'Error retrieving data from the database.' });
-            }
-
-            if (results.length === 0) {
-                return res.status(404).json({ message: 'Record not found' });
-            }
-
-            if (userRole !== 'Admin') {
-                // Add username to each record if the user is not an Admin
-                results = results.map(result => ({
-                    ...result,
-                    username: username
-                }));
-            }
-
-            return res.json({ result: results, message: 'Records retrieved successfully' });
-        });
+        return res.json({ username: username, records: results, message: 'Records retrieved successfully' });
     });
+});
 
 const port = process.env.PORT || 5050;
 app.listen(port, () => {
