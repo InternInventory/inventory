@@ -2093,26 +2093,43 @@ app.post('/hftlogin', (req, res) => {
 
 // POST endpoint to update a record
 app.post('/hftday', (req, res) => {
-    const { username, day, comment, date, password, jwt_token, expiration_time } = req.body;
+    const { username, day, comment, date } = req.body;
 
     // Validate input
-    if (!username || !day || !comment || !date || !password || !jwt_token || !expiration_time) {
-        return res.status(400).json({ message: 'Username, day, date, comment, password, jwt_token, and expiration_time are required' });
+    if (!username || !day || !comment || !date) {
+        return res.status(400).json({ message: 'Username, day, date, and comment are required' });
     }
 
-    // Insert the record into the MySQL database
-    const sql = `INSERT INTO highft_login (username, day, comment, date, password, jwt_token, expiration_time) VALUES (?, ?, ?, ?, ?, ?, ?)`;
-    const values = [username, day, comment, date, password, jwt_token, expiration_time];
+    // Query to get password, jwt_token, and expiration_time for the user
+    const selectQuery = 'SELECT password, jwt_token, expiration_time FROM highft_login WHERE username = ?';
 
-    connection.query(sql, values, (err, results) => {
-        if (err) {
-            console.error('Error inserting data into MySQL:', err);
-            return res.status(500).json({ message: 'Error inserting data into the database.' });
+    connection.query(selectQuery, [username], (selectErr, selectResults) => {
+        if (selectErr) {
+            console.error('Error fetching data from MySQL:', selectErr);
+            return res.status(500).json({ message: 'Error fetching data from the database.' });
         }
 
-        return res.json({ result: "result", message: 'Item inserted successfully', id: results.insertId });
+        if (selectResults.length === 0) {
+            return res.status(404).json({ message: 'User not found' });
+        }
+
+        const { password, jwt_token, expiration_time } = selectResults[0];
+
+        // Query to insert new data in the MySQL database
+        const insertQuery = `INSERT INTO highft_login (username, day, comment, date, password, jwt_token, expiration_time) VALUES (?, ?, ?, ?, ?, ?, ?)`;
+        const values = [username, day, comment, date, password, jwt_token, expiration_time];
+
+        connection.query(insertQuery, values, (insertErr, insertResults) => {
+            if (insertErr) {
+                console.error('Error inserting data into MySQL:', insertErr);
+                return res.status(500).json({ message: 'Error inserting data into the database.' });
+            }
+
+            return res.json({ message: 'Attendance successfully recorded' });
+        });
     });
 });
+
 // GET endpoint to retrieve specific fields of a record
 app.get('/hftday/:username', (req, res) => {
     const username = req.params.username;
