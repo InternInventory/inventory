@@ -2136,7 +2136,13 @@ app.get('/hftday/:username', (req, res) => {
             return res.status(404).json({ message: 'Record not found' });
         }
 
-        return res.json({ result: results[0], message: 'Record retrieved successfully' });
+        // Add username to each record
+        const recordsWithUsername = results.map(record => ({
+            ...record,
+            username: username
+        }));
+
+        return res.json({ records: recordsWithUsername, message: 'Records retrieved successfully' });
     });
 });
 const port = process.env.PORT || 5050;
