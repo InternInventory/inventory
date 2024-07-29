@@ -2137,12 +2137,12 @@ app.get('/hftday/:username', (req, res) => {
         }
 
         // Add username to each record
-        const recordsWithUsername = results.map(record => ({
-            ...record,
+        const recordsWithUsername = results.map(result => ({
+            ...result,
             username: username
         }));
 
-        return res.json({ records: recordsWithUsername, message: 'Records retrieved successfully' });
+        return res.json({ result: recordsWithUsername, message: 'results retrieved successfully' });
     });
 });
 const port = process.env.PORT || 5050;
