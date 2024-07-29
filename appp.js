@@ -2092,43 +2092,25 @@ app.post('/hftlogin', (req, res) => {
 });
 
 // POST endpoint to update a record
-app.post('/hftlogin', (req, res) => {
-    const { username, password } = req.body;
+app.post('/hftday', (req, res) => {
+    const { username, day, comment, date, password, jwt_token, expiration_time } = req.body;
 
-    // Check if the user exists
-    connection.query('SELECT * FROM highft_login WHERE username = ? AND password = ?', [username, password], (err, results) => {
+    // Validate input
+    if (!username || !day || !comment || !date || !password || !jwt_token || !expiration_time) {
+        return res.status(400).json({ message: 'Username, day, date, comment, password, jwt_token, and expiration_time are required' });
+    }
+
+    // Insert the record into the MySQL database
+    const sql = `INSERT INTO highft_login (username, day, comment, date, password, jwt_token, expiration_time) VALUES (?, ?, ?, ?, ?, ?, ?)`;
+    const values = [username, day, comment, date, password, jwt_token, expiration_time];
+
+    connection.query(sql, values, (err, results) => {
         if (err) {
-            console.log(err);
-            res.status(500).json({ error: 'Internal server error' });
-            return;
+            console.error('Error inserting data into MySQL:', err);
+            return res.status(500).json({ message: 'Error inserting data into the database.' });
         }
 
-        if (results.length === 0) {
-            res.status(401).json({ error: 'Invalid username or password' });
-            return;
-        }
-
-        const user = results[0];
-
-        // User is authenticated; generate a JWT token
-        const token = jwt.sign({ id: user.id, username: user.username, role: user.role }, 'secretkey', {
-            expiresIn: '12h', // Token expires in 12 hours
-        });
-
-        // Calculate the expiration time (current time + 12 hours)
-        const expirationTime = new Date(Date.now() + 12 * 60 * 60 * 1000).toISOString().slice(0, 19).replace('T', ' ');
-
-        // Update the database with the JWT token and expiration time
-        connection.query('UPDATE highft_login SET jwt_token = ?, expiration_time = ? WHERE username = ?', [token, expirationTime, user.username], (updateErr) => {
-            if (updateErr) {
-                console.log(updateErr);
-                res.status(500).json({ error: 'Failed to update JWT token and expiration time in the database' });
-                return;
-            }
-            
-            // Send response including role
-            res.status(200).json({ token, expirationTime, role: user.role });
-        });
+        return res.json({ result: "result", message: 'Item inserted successfully', id: results.insertId });
     });
 });
 // GET endpoint to retrieve specific fields of a record
