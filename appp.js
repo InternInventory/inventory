@@ -2084,7 +2084,7 @@ app.post('/hftlogin', (req, res) => {
                 res.status(500).json({ error: 'Failed to update JWT token and expiration time in the database' });
                 return;
             }
-            
+
             // Send response including role
             res.status(200).json({ token, expirationTime, role: user.role });
         });
@@ -2189,40 +2189,40 @@ app.get('/hftday/:username', (req, res) => {
     });
 });
 app.post('/hftregister', async (req, res) => {
-  const { email, username, password, confirmPassword } = req.body;
+    const { email, username, password, confirmPassword } = req.body;
 
-  // Check if all fields are provided
-  if (!email || !username || !password || !confirmPassword) {
-    return res.status(400).json({ message: 'All fields are required.' });
-  }
-
-  // Check if password and confirmPassword match
-  if (password !== confirmPassword) {
-    return res.status(400).json({ message: 'Passwords do not match.' });
-  }
-
-  try {
-    // Check if user already exists
-    const [existingUser] = await connection.promise().query(
-      'SELECT * FROM highft_login WHERE email = ? OR username = ?',
-      [email, username]
-    );
-
-    if (existingUser.length > 0) {
-      return res.status(400).json({ message: 'User already exists.' });
+    // Check if all fields are provided
+    if (!email || !username || !password || !confirmPassword) {
+        return res.status(400).json({ message: 'All fields are required.' });
     }
 
-    // Save the user
-    await connection.promise().query(
-      'INSERT INTO highft_login(email, username, password) VALUES (?, ?, ?)',
-      [email, username, password]
-    );
+    // Check if password and confirmPassword match
+    if (password !== confirmPassword) {
+        return res.status(400).json({ message: 'Passwords do not match.' });
+    }
 
-    res.status(201).json({ message: 'User registered successfully.' });
-  } catch (err) {
-    console.error('Database error:', err);
-    res.status(500).json({ message: 'Database error.', error: err });
-  }
+    try {
+        // Check if user already exists
+        const [existingUser] = await connection.promise().query(
+            'SELECT * FROM highft_login WHERE email = ? OR username = ?',
+            [email, username]
+        );
+
+        if (existingUser.length > 0) {
+            return res.status(400).json({ message: 'User already exists.' });
+        }
+
+        // Save the user
+        await connection.promise().query(
+            'INSERT INTO highft_login(email, username, password) VALUES (?, ?, ?)',
+            [email, username, password]
+        );
+
+        res.status(201).json({ message: 'User registered successfully.' });
+    } catch (err) {
+        console.error('Database error:', err);
+        res.status(500).json({ message: 'Database error.', error: err });
+    }
 });
 
 app.post('/hftlogin', (req, res) => {
@@ -2384,14 +2384,15 @@ app.get('/barcodess', (req, res) => {
 });
 
 app.get('/download-barcode', (req, res) => {
-    const barcode = req.query;
+    const barcode = req.query.barcode;
 
     if (!barcode) {
         return res.status(400).send('Barcode ID is required');
     }
 
     // Query the database for the barcode data
-    const query = 'SELECT barcode FROM barcode WHERE id = ?';
+    const decodedbarcode = decodeURIComponent(barcode);
+    const query = 'SELECT * FROM barcode WHERE barcode = ?';
     connection.query(query, [barcode], (err, results) => {
         // Close the connection
         //connection.end();
@@ -2400,7 +2401,6 @@ app.get('/download-barcode', (req, res) => {
             console.error('Error executing query:', err);
             return res.status(500).send('Query execution failed');
         }
-
         if (results.length === 0) {
             return res.status(404).send('Barcode not found');
         }
