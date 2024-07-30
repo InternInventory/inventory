@@ -2049,6 +2049,182 @@ app.get('/select-date', (req, res) => {
     });
 });
 
+//////////////////////////////////////////////hftsatya///////////////////////////////////////////////////////////
+
+app.post('/hftlogin', (req, res) => {
+    const { username, password } = req.body;
+
+    // Check if the user exists
+    connection.query('SELECT * FROM highft_login WHERE username = ? AND password = ?', [username, password], (err, results) => {
+        if (err) {
+            console.log(err);
+            res.status(500).json({ error: 'Internal server error' });
+            return;
+        }
+
+        if (results.length === 0) {
+            res.status(401).json({ error: 'Invalid username or password' });
+            return;
+        }
+
+        const user = results[0];
+
+        // User is authenticated; generate a JWT token
+        const token = jwt.sign({ id: user.id, username: user.username, role: user.role }, 'secretkey', {
+            expiresIn: '12h', // Token expires in 12 hours
+        });
+
+        // Calculate the expiration time (current time + 12 hours)
+        const expirationTime = new Date(Date.now() + 12 * 60 * 60 * 1000).toISOString().slice(0, 19).replace('T', ' ');
+
+        // Update the database with the JWT token and expiration time
+        connection.query('UPDATE highft_login SET jwt_token = ?, expiration_time = ? WHERE username = ?', [token, expirationTime, user.username], (updateErr) => {
+            if (updateErr) {
+                console.log(updateErr);
+                res.status(500).json({ error: 'Failed to update JWT token and expiration time in the database' });
+                return;
+            }
+            
+            // Send response including role
+            res.status(200).json({ token, expirationTime, role: user.role });
+        });
+    });
+});
+
+// POST endpoint to update a record
+app.post('/hftday', (req, res) => {
+    const { username, day, comment, date } = req.body;
+
+    // Validate input
+    if (!username || !day || !comment || !date) {
+        return res.status(400).json({ message: 'Username, day, date, and comment are required' });
+    }
+
+    // Query to get password, jwt_token, and expiration_time for the user
+    const selectQuery = 'SELECT password, jwt_token, expiration_time FROM highft_login WHERE username = ?';
+
+    connection.query(selectQuery, [username], (selectErr, selectResults) => {
+        if (selectErr) {
+            console.error('Error fetching data from MySQL:', selectErr);
+            return res.status(500).json({ message: 'Error fetching data from the database.' });
+        }
+
+        if (selectResults.length === 0) {
+            return res.status(404).json({ message: 'User not found' });
+        }
+
+        const { password, jwt_token, expiration_time } = selectResults[0];
+
+        // Query to insert new data in the MySQL database
+        const insertQuery = `INSERT INTO highft_login (username, day, comment, date, password, jwt_token, expiration_time) VALUES (?, ?, ?, ?, ?, ?, ?)`;
+        const values = [username, day, comment, date, password, jwt_token, expiration_time];
+
+        connection.query(insertQuery, values, (insertErr, insertResults) => {
+            if (insertErr) {
+                console.error('Error inserting data into MySQL:', insertErr);
+                return res.status(500).json({ message: 'Error inserting data into the database.' });
+            }
+
+            return res.json({ message: 'Attendance successfully recorded' });
+        });
+    });
+});
+
+// GET endpoint to retrieve specific fields of a record
+app.get('/hftday/:username', (req, res) => {
+    const username = req.params.username;
+
+    // Validate input
+    if (!username) {
+        return res.status(400).json({ message: 'Username is required' });
+    }
+
+    // First, retrieve the user role from the database
+    const getUserRoleSql = `SELECT role FROM highft_login WHERE username = ?`;
+    connection.query(getUserRoleSql, [username], (err, roleResults) => {
+        if (err) {
+            console.error('Error retrieving user role from MySQL:', err);
+            return res.status(500).json({ message: 'Error retrieving user role from the database.' });
+        }
+
+        if (roleResults.length === 0) {
+            return res.status(404).json({ message: 'User not found' });
+        }
+
+        const userRole = roleResults[0].role;
+
+        let sql;
+        let values;
+
+        // Check the user role and prepare the SQL query accordingly
+        if (userRole === 'Admin') {
+            sql = `SELECT day, comment, date, role, username FROM highft_login`;
+            values = [];
+        } else {
+            sql = `SELECT day, comment, role, date FROM highft_login WHERE username = ?`;
+            values = [username];
+        }
+
+        // Retrieve the data from the MySQL database
+        connection.query(sql, values, (err, results) => {
+            if (err) {
+                console.error('Error retrieving data from MySQL:', err);
+                return res.status(500).json({ message: 'Error retrieving data from the database.' });
+            }
+
+            if (results.length === 0) {
+                return res.status(404).json({ message: 'Record not found' });
+            }
+
+            if (userRole !== 'Admin') {
+                // Add username to each record if the user is not an Admin
+                results = results.map(result => ({
+                    ...result,
+                    username: username
+                }));
+            }
+
+            return res.json({ result: results, message: 'Records retrieved successfully' });
+        });
+    });
+});
+app.post('/hftregister', async (req, res) => {
+  const { email, username, password, confirmPassword } = req.body;
+
+  // Check if all fields are provided
+  if (!email || !username || !password || !confirmPassword) {
+    return res.status(400).json({ message: 'All fields are required.' });
+  }
+
+  // Check if password and confirmPassword match
+  if (password !== confirmPassword) {
+    return res.status(400).json({ message: 'Passwords do not match.' });
+  }
+
+  try {
+    // Check if user already exists
+    const [existingUser] = await connection.promise().query(
+      'SELECT * FROM highft_login WHERE email = ? OR username = ?',
+      [email, username]
+    );
+
+    if (existingUser.length > 0) {
+      return res.status(400).json({ message: 'User already exists.' });
+    }
+
+    // Save the user
+    await connection.promise().query(
+      'INSERT INTO highft_login(email, username, password) VALUES (?, ?, ?)',
+      [email, username, password]
+    );
+
+    res.status(201).json({ message: 'User registered successfully.' });
+  } catch (err) {
+    console.error('Database error:', err);
+    res.status(500).json({ message: 'Database error.', error: err });
+  }
+});
+
 app.post('/hftlogin', (req, res) => {
     const { username, password } = req.body;
 
@@ -2251,6 +2427,7 @@ app.get('/download-barcode', (req, res) => {
         });
     });
 });
+
 
 
 const port = process.env.PORT || 5050;
