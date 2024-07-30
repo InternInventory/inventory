@@ -2394,7 +2394,7 @@ app.get('/download-barcode', (req, res) => {
     const query = 'SELECT barcode FROM barcode WHERE id = ?';
     connection.query(query, [barcode], (err, results) => {
         // Close the connection
-        connection.end();
+        //connection.end();
 
         if (err) {
             console.error('Error executing query:', err);
