@@ -2188,6 +2188,42 @@ app.get('/hftday/:username', (req, res) => {
         });
     });
 });
+app.post('/hftregister', async (req, res) => {
+  const { email, username, password, confirmPassword } = req.body;
+
+  // Check if all fields are provided
+  if (!email || !username || !password || !confirmPassword) {
+    return res.status(400).json({ message: 'All fields are required.' });
+  }
+
+  // Check if password and confirmPassword match
+  if (password !== confirmPassword) {
+    return res.status(400).json({ message: 'Passwords do not match.' });
+  }
+
+  try {
+    // Check if user already exists
+    const [existingUser] = await connection.promise().query(
+      'SELECT * FROM highft_login WHERE email = ? OR username = ?',
+      [email, username]
+    );
+
+    if (existingUser.length > 0) {
+      return res.status(400).json({ message: 'User already exists.' });
+    }
+
+    // Save the user
+    await connection.promise().query(
+      'INSERT INTO highft_login(email, username, password) VALUES (?, ?, ?)',
+      [email, username, password]
+    );
+
+    res.status(201).json({ message: 'User registered successfully.' });
+  } catch (err) {
+    console.error('Database error:', err);
+    res.status(500).json({ message: 'Database error.', error: err });
+  }
+});
 
 const port = process.env.PORT || 5050;
 app.listen(port, () => {
