@@ -2048,6 +2048,138 @@ app.get('/select-date', (req, res) => {
         res.json({ barcodes: results });
     });
 });
+app.get('/barcodess', (req, res) => {
+    const { name, year, type, quantity } = req.query;
+
+    if (!name || !year || !type || !quantity) {
+        return res.status(400).send('All fields (name, year, type, quantity) are required.');
+    }
+
+    connection.query(
+        'INSERT INTO barcode (name, year, type, quantity) VALUES (?, ?, ?, ?)',
+        [name, year, type, quantity],
+        (err, results) => {
+            if (err) {
+                return res.status(500).send(err.message);
+            }
+
+            connection.query(
+                'SELECT MAX(SUBSTRING_INDEX(barcode, "/", -1)) AS lastNumber FROM barcode WHERE type = ?',
+                [type],
+                (err, rows) => {
+                    if (err) {
+                        return res.status(500).send(err.message);
+                    }
+
+                    const lastNumber = rows[0].lastNumber ? parseInt(rows[0].lastNumber) : 0;
+
+                    const output = fs.createWriteStream(path.join(__dirname, 'barcodes.zip'));
+                    const archive = archiver('zip', { zlib: { level: 9 } });
+
+                    output.on('close', () => {
+                        res.download(path.join(__dirname, 'barcodes.zip'), 'barcodes.zip', (err) => {
+                            if (err) {
+                                res.status(500).send(err.message);
+                            } else {
+                                fs.unlinkSync(path.join(__dirname, 'barcodes.zip')); // Clean up the zip file after download
+                            }
+                        });
+                    });
+
+                    archive.on('error', (err) => {
+                        res.status(500).send(err.message);
+                    });
+
+                    archive.pipe(output);
+
+                    const generateBarcode = (index, callback) => {
+                        const formattedIndex = String(index).padStart(3, '0'); // Pad the index to three digits
+                        const barcodeText = `${name}/${year}/${type}/${formattedIndex}`; // Format the barcode text
+
+                        bwipjs.toBuffer({
+                            bcid: 'code128',        // Barcode type
+                            text: barcodeText,      // Text to encode
+                            scale: 3,               // 3x scaling factor
+                            height: 10,             // Bar height, in millimeters
+                            includetext: true,      // Show human-readable text
+                            textxalign: 'center',   // Align text to the center
+                        }, (err, png) => {
+                            if (err) {
+                                callback(err);
+                            } else {
+                                const filename = `barcode-${formattedIndex}.png`;
+                                archive.append(png, { name: filename });
+                                callback(null);
+                            }
+                        });
+                    };
+
+                    let counter = 1;
+                    const generateNextBarcode = () => {
+                        if (counter <= quantity) {
+                            generateBarcode(lastNumber + counter, (err) => {
+                                if (err) {
+                                    return res.status(500).send(err.message);
+                                }
+                                counter++;
+                                generateNextBarcode();
+                            });
+                        } else {
+                            archive.finalize();
+                        }
+                    };
+
+                    generateNextBarcode();
+                }
+            );
+        }
+    );
+});
+
+app.get('/download-barcode', (req, res) => {
+    const barcode = req.query.barcode;
+
+    if (!barcode) {
+        return res.status(400).send('Barcode ID is required');
+    }
+
+    // Query the database for the barcode data
+    const decodedbarcode = decodeURIComponent(barcode);
+    const query = 'SELECT * FROM barcode WHERE barcode = ?';
+    connection.query(query, [barcode], (err, results) => {
+        // Close the connection
+        //connection.end();
+
+        if (err) {
+            console.error('Error executing query:', err);
+            return res.status(500).send('Query execution failed');
+        }
+        if (results.length === 0) {
+            return res.status(404).send('Barcode not found');
+        }
+
+        const barcode = results[0].barcode;
+
+        // Generate the barcode
+        bwipjs.toBuffer({
+            bcid: 'code128',       // Barcode type
+            text: barcode.toString(), // Text to encode
+            scale: 3,               // 3x scaling factor
+            height: 10,             // Bar height, in millimeters
+            includetext: true,      // Show human-readable text
+            textxalign: 'center',   // Always good to set this
+        }, (err, png) => {
+            if (err) {
+                console.error('Error generating barcode:', err);
+                return res.status(500).send('Barcode generation failed');
+            }
+
+            // Send the generated PNG as a response
+            res.type('image/png');
+            res.send(png);
+        });
+    });
+});
 
 //////////////////////////////////////////////hftsatya///////////////////////////////////////////////////////////
 
@@ -2188,41 +2320,42 @@ app.get('/hftday/:username', (req, res) => {
         });
     });
 });
-app.post('/hftregister', async (req, res) => {
-    const { email, username, password, confirmPassword } = req.body;
+  
+app.post('/register', async (req, res) => {
+  const { email, username, password, confirmPassword,role } = req.body;
 
-    // Check if all fields are provided
-    if (!email || !username || !password || !confirmPassword) {
-        return res.status(400).json({ message: 'All fields are required.' });
+  // Check if all fields are provided
+  if (!email || !username || !password || !confirmPassword || !role) {
+    return res.status(400).json({ message: 'All fields are required.' });
+  }
+
+  // Check if password and confirmPassword match
+  if (password !== confirmPassword) {
+    return res.status(400).json({ message: 'Passwords do not match.' });
+  }
+
+  try {
+    // Check if user already exists
+    const [existingUser] = await connection.promise().query(
+      'SELECT * FROM highft_login WHERE email = ? OR username = ?',
+      [email, username]
+    );
+
+    if (existingUser.length > 0) {
+      return res.status(400).json({ message: 'User already exists.' });
     }
 
-    // Check if password and confirmPassword match
-    if (password !== confirmPassword) {
-        return res.status(400).json({ message: 'Passwords do not match.' });
-    }
+    // Save the user
+    await connection.promise().query(
+      'INSERT INTO highft_login(email, username, role, password) VALUES (?,?, ?, ?)',
+      [email, username, role,password]
+    );
 
-    try {
-        // Check if user already exists
-        const [existingUser] = await connection.promise().query(
-            'SELECT * FROM highft_login WHERE email = ? OR username = ?',
-            [email, username]
-        );
-
-        if (existingUser.length > 0) {
-            return res.status(400).json({ message: 'User already exists.' });
-        }
-
-        // Save the user
-        await connection.promise().query(
-            'INSERT INTO highft_login(email, username, password) VALUES (?, ?, ?)',
-            [email, username, password]
-        );
-
-        res.status(201).json({ message: 'User registered successfully.' });
-    } catch (err) {
-        console.error('Database error:', err);
-        res.status(500).json({ message: 'Database error.', error: err });
-    }
+    res.status(201).json({ message: 'User registered successfully.' });
+  } catch (err) {
+    console.error('Database error:', err);
+    res.status(500).json({ message: 'Database error.', error: err });
+  }
 });
 
 app.post('/hftlogin', (req, res) => {
@@ -2295,138 +2428,7 @@ app.post('/hftday', (req, res) => {
 });
 
 
-app.get('/barcodess', (req, res) => {
-    const { name, year, type, quantity } = req.query;
 
-    if (!name || !year || !type || !quantity) {
-        return res.status(400).send('All fields (name, year, type, quantity) are required.');
-    }
-
-    connection.query(
-        'INSERT INTO barcode (name, year, type, quantity) VALUES (?, ?, ?, ?)',
-        [name, year, type, quantity],
-        (err, results) => {
-            if (err) {
-                return res.status(500).send(err.message);
-            }
-
-            connection.query(
-                'SELECT MAX(SUBSTRING_INDEX(barcode, "/", -1)) AS lastNumber FROM barcode WHERE type = ?',
-                [type],
-                (err, rows) => {
-                    if (err) {
-                        return res.status(500).send(err.message);
-                    }
-
-                    const lastNumber = rows[0].lastNumber ? parseInt(rows[0].lastNumber) : 0;
-
-                    const output = fs.createWriteStream(path.join(__dirname, 'barcodes.zip'));
-                    const archive = archiver('zip', { zlib: { level: 9 } });
-
-                    output.on('close', () => {
-                        res.download(path.join(__dirname, 'barcodes.zip'), 'barcodes.zip', (err) => {
-                            if (err) {
-                                res.status(500).send(err.message);
-                            } else {
-                                fs.unlinkSync(path.join(__dirname, 'barcodes.zip')); // Clean up the zip file after download
-                            }
-                        });
-                    });
-
-                    archive.on('error', (err) => {
-                        res.status(500).send(err.message);
-                    });
-
-                    archive.pipe(output);
-
-                    const generateBarcode = (index, callback) => {
-                        const formattedIndex = String(index).padStart(3, '0'); // Pad the index to three digits
-                        const barcodeText = `${name}/${year}/${type}/${formattedIndex}`; // Format the barcode text
-
-                        bwipjs.toBuffer({
-                            bcid: 'code128',        // Barcode type
-                            text: barcodeText,      // Text to encode
-                            scale: 3,               // 3x scaling factor
-                            height: 10,             // Bar height, in millimeters
-                            includetext: true,      // Show human-readable text
-                            textxalign: 'center',   // Align text to the center
-                        }, (err, png) => {
-                            if (err) {
-                                callback(err);
-                            } else {
-                                const filename = `barcode-${formattedIndex}.png`;
-                                archive.append(png, { name: filename });
-                                callback(null);
-                            }
-                        });
-                    };
-
-                    let counter = 1;
-                    const generateNextBarcode = () => {
-                        if (counter <= quantity) {
-                            generateBarcode(lastNumber + counter, (err) => {
-                                if (err) {
-                                    return res.status(500).send(err.message);
-                                }
-                                counter++;
-                                generateNextBarcode();
-                            });
-                        } else {
-                            archive.finalize();
-                        }
-                    };
-
-                    generateNextBarcode();
-                }
-            );
-        }
-    );
-});
-
-app.get('/download-barcode', (req, res) => {
-    const barcode = req.query.barcode;
-
-    if (!barcode) {
-        return res.status(400).send('Barcode ID is required');
-    }
-
-    // Query the database for the barcode data
-    const decodedbarcode = decodeURIComponent(barcode);
-    const query = 'SELECT * FROM barcode WHERE barcode = ?';
-    connection.query(query, [barcode], (err, results) => {
-        // Close the connection
-        //connection.end();
-
-        if (err) {
-            console.error('Error executing query:', err);
-            return res.status(500).send('Query execution failed');
-        }
-        if (results.length === 0) {
-            return res.status(404).send('Barcode not found');
-        }
-
-        const barcode = results[0].barcode;
-
-        // Generate the barcode
-        bwipjs.toBuffer({
-            bcid: 'code128',       // Barcode type
-            text: barcode.toString(), // Text to encode
-            scale: 3,               // 3x scaling factor
-            height: 10,             // Bar height, in millimeters
-            includetext: true,      // Show human-readable text
-            textxalign: 'center',   // Always good to set this
-        }, (err, png) => {
-            if (err) {
-                console.error('Error generating barcode:', err);
-                return res.status(500).send('Barcode generation failed');
-            }
-
-            // Send the generated PNG as a response
-            res.type('image/png');
-            res.send(png);
-        });
-    });
-});
 
 
 const port = process.env.PORT || 5050;
