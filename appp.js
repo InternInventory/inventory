@@ -2256,60 +2256,69 @@ app.get('/hftday/:user_id', (req, res) => {
 
   // Validate input
   if (!user_id) {
-      return res.status(400).json({ message: 'user_id is required' });
+    return res.status(400).json({ message: 'user_id is required' });
   }
 
-  // First, retrieve the user role from the database
-  const getUserRoleSql = `select DISTINCT(l.role) ,l.user_id FROM inventory.highft_Record r  join inventory.highft_login l on r.user_id = l.user_id where l.user_id=?`;
+  // First, retrieve the user role and username from the database
+  const getUserRoleSql = `SELECT DISTINCT(l.role), l.user_id, l.username 
+                          FROM inventory.highft_Record r 
+                          JOIN inventory.highft_login l ON r.user_id = l.user_id 
+                          WHERE l.user_id = ?`;
   connection.query(getUserRoleSql, [user_id], (err, roleResults) => {
+    if (err) {
+      console.error('Error retrieving user role from MySQL:', err);
+      return res.status(500).json({ message: 'Error retrieving user role from the database.' });
+    }
+
+    if (roleResults.length === 0) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    const userRole = roleResults[0].role;
+    const username = roleResults[0].username;
+    console.log(userRole, username);
+
+    let sql;
+    let values;
+
+    // Check the user role and prepare the SQL query accordingly
+    if (userRole === 'Admin') {
+      sql = `SELECT r.*, l.username 
+             FROM inventory.highft_Record r 
+             JOIN inventory.highft_login l ON r.user_id = l.user_id`;
+      values = [];
+    } else {
+      sql = `SELECT r.*, l.username 
+             FROM inventory.highft_Record r 
+             JOIN inventory.highft_login l ON r.user_id = l.user_id 
+             WHERE r.user_id = ?`;
+      values = [user_id];
+    }
+
+    // Retrieve the data from the MySQL database
+    connection.query(sql, values, (err, results) => {
       if (err) {
-          console.error('Error retrieving user role from MySQL:', err);
-          return res.status(500).json({ message: 'Error retrieving user role from the database.' });
+        console.error('Error retrieving data from MySQL:', err);
+        return res.status(500).json({ message: 'Error retrieving data from the database.' });
       }
 
-      if (roleResults.length === 0) {
-          return res.status(404).json({ message: 'User not found' });
+      if (results.length === 0) {
+        return res.status(404).json({ message: 'Record not found' });
       }
 
-      const userRole = roleResults[0].role;
-      console.log(userRole)
-
-      let sql;
-      let values;
-
-      // Check the user role and prepare the SQL query accordingly
-      if (userRole === 'Admin') {
-          sql = `SELECT * FROM highft_Record`;
-          values = [];
-      } else {
-          sql = `SELECT * FROM highft_Record WHERE user_id = ?`;
-          values = [user_id];
+      if (userRole !== 'Admin') {
+        // Add username to each record if the user is not an Admin
+        results = results.map(result => ({
+          ...result,
+          user_id: user_id,
+          username: username
+        }));
       }
 
-      // Retrieve the data from the MySQL database
-      connection.query(sql, values, (err, results) => {
-          if (err) {
-              console.error('Error retrieving data from MySQL:', err);
-              return res.status(500).json({ message: 'Error retrieving data from the database.' });
-          }
-
-          if (results.length === 0) {
-              return res.status(404).json({ message: 'Record not found' });
-          }
-
-          if (userRole !== 'Admin') {
-              // Add username to each record if the user is not an Admin
-              results = results.map(result => ({
-                  ...result,
-                  user_id: user_id
-              }));
-          }
-
-          return res.json({ result: results, message: 'Records retrieved successfully' });
-      });
+      return res.json({ result: results, message: 'Records retrieved successfully' });
+    });
   });
 });
-
   
 app.post('/hftregister', async (req, res) => {
   const { email, username, password, confirmPassword,role } = req.body;
