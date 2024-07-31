@@ -2321,7 +2321,7 @@ app.get('/hftday/:username', (req, res) => {
     });
 });
   
-app.post('/register', async (req, res) => {
+app.post('/hftregister', async (req, res) => {
   const { email, username, password, confirmPassword,role } = req.body;
 
   // Check if all fields are provided
