@@ -2249,64 +2249,67 @@ app.post('/hftday', (req, res) => {
     return res.json({ message: 'Attendance successfully recorded.' });
   });
 });
+
 // GET endpoint to retrieve specific fields of a record
-app.get('/hftday/:username', (req, res) => {
-    const username = req.params.username;
+app.get('/hftday/:user_id', (req, res) => {
+  const user_id = req.params.user_id;
 
-    // Validate input
-    if (!username) {
-        return res.status(400).json({ message: 'Username is required' });
-    }
+  // Validate input
+  if (!user_id) {
+      return res.status(400).json({ message: 'user_id is required' });
+  }
 
-    // First, retrieve the user role from the database
-    const getUserRoleSql = `SELECT role FROM highft_login WHERE username = ?`;
-    connection.query(getUserRoleSql, [username], (err, roleResults) => {
-        if (err) {
-            console.error('Error retrieving user role from MySQL:', err);
-            return res.status(500).json({ message: 'Error retrieving user role from the database.' });
-        }
+  // First, retrieve the user role from the database
+  const getUserRoleSql = `select DISTINCT(l.role) ,l.user_id FROM inventory.highft_Record r  join inventory.highft_login l on r.user_id = l.user_id where l.user_id=?`;
+  connection.query(getUserRoleSql, [user_id], (err, roleResults) => {
+      if (err) {
+          console.error('Error retrieving user role from MySQL:', err);
+          return res.status(500).json({ message: 'Error retrieving user role from the database.' });
+      }
 
-        if (roleResults.length === 0) {
-            return res.status(404).json({ message: 'User not found' });
-        }
+      if (roleResults.length === 0) {
+          return res.status(404).json({ message: 'User not found' });
+      }
 
-        const userRole = roleResults[0].role;
+      const userRole = roleResults[0].role;
+      console.log(userRole)
 
-        let sql;
-        let values;
+      let sql;
+      let values;
 
-        // Check the user role and prepare the SQL query accordingly
-        if (userRole === 'Admin') {
-            sql = `SELECT day, comment, date, role, username FROM highft_login`;
-            values = [];
-        } else {
-            sql = `SELECT day, comment, role, date FROM highft_login WHERE username = ?`;
-            values = [username];
-        }
+      // Check the user role and prepare the SQL query accordingly
+      if (userRole === 'Admin') {
+          sql = `SELECT * FROM highft_Record`;
+          values = [];
+      } else {
+          sql = `SELECT * FROM highft_Record WHERE user_id = ?`;
+          values = [user_id];
+      }
 
-        // Retrieve the data from the MySQL database
-        connection.query(sql, values, (err, results) => {
-            if (err) {
-                console.error('Error retrieving data from MySQL:', err);
-                return res.status(500).json({ message: 'Error retrieving data from the database.' });
-            }
+      // Retrieve the data from the MySQL database
+      connection.query(sql, values, (err, results) => {
+          if (err) {
+              console.error('Error retrieving data from MySQL:', err);
+              return res.status(500).json({ message: 'Error retrieving data from the database.' });
+          }
 
-            if (results.length === 0) {
-                return res.status(404).json({ message: 'Record not found' });
-            }
+          if (results.length === 0) {
+              return res.status(404).json({ message: 'Record not found' });
+          }
 
-            if (userRole !== 'Admin') {
-                // Add username to each record if the user is not an Admin
-                results = results.map(result => ({
-                    ...result,
-                    username: username
-                }));
-            }
+          if (userRole !== 'Admin') {
+              // Add username to each record if the user is not an Admin
+              results = results.map(result => ({
+                  ...result,
+                  user_id: user_id
+              }));
+          }
 
-            return res.json({ result: results, message: 'Records retrieved successfully' });
-        });
-    });
+          return res.json({ result: results, message: 'Records retrieved successfully' });
+      });
+  });
 });
+
   
 app.post('/hftregister', async (req, res) => {
   const { email, username, password, confirmPassword,role } = req.body;
