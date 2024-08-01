@@ -2301,6 +2301,7 @@ app.get('/barcodess', (req, res) => {
     if (!name || !year || !type || !quantity) {
         return res.status(400).send('All fields (name, year, type, quantity) are required.');
     }
+    let barcodeText = [];
 
     connection.query(
         'INSERT INTO barcode (name, year, type, quantity) VALUES (?, ?, ?, ?)',
@@ -2354,7 +2355,7 @@ app.get('/barcodess', (req, res) => {
                             if (err) {
                                 callback(err);
                             } else {
-                                const filename = `barcode-${formattedIndex}.png`;
+                                const filename = `${name}-${year}-${type}-${formattedIndex}.png`;
                                 archive.append(png, { name: filename });
                                 callback(null);
                             }
@@ -2375,13 +2376,89 @@ app.get('/barcodess', (req, res) => {
                             archive.finalize();
                         }
                     };
-
                     generateNextBarcode();
                 }
             );
         }
     );
 });
+
+app.get('/barcodessss', (req, res) => {
+    const { name, year, type, quantity } = req.query;
+
+    if (!name || !year || !type || !quantity) {
+        return res.status(400).send('All fields (name, year, type, quantity) are required.');
+    }
+
+    connection.query(
+        'SELECT MAX(SUBSTRING_INDEX(barcode, "/", -1)) AS lastNumber FROM barcode WHERE type = ?',
+        [type],
+        (err, rows) => {
+            if (err) {
+                return res.status(500).send(err.message);
+            }
+
+            const lastNumber = rows[0].lastNumber ? parseInt(rows[0].lastNumber) : 0;
+            const barcodes = [];
+
+            for (let i = 1; i <= quantity; i++) {
+                const formattedIndex = String(lastNumber + i).padStart(3, '0');
+                const barcodeText = `${name}/${year}/${type}/${formattedIndex}`;
+                barcodes.push([name, year, type, quantity, barcodeText]);
+            }
+
+            const sql = 'INSERT INTO barcode (name, year, type, quantity, barcode) VALUES ?';
+            connection.query(sql, [barcodes], (err, results) => {
+                if (err) {
+                    return res.status(500).send(err.message);
+                }
+
+                const output = fs.createWriteStream(path.join(__dirname, 'barcodes.zip'));
+                const archive = archiver('zip', { zlib: { level: 9 } });
+
+                output.on('close', () => {
+                    res.download(path.join(__dirname, 'barcodes.zip'), 'barcodes.zip', (err) => {
+                        if (err) {
+                            res.status(500).send(err.message);
+                        } else {
+                            fs.unlinkSync(path.join(__dirname, 'barcodes.zip')); // Clean up the zip file after download
+                        }
+                    });
+                });
+
+                archive.on('error', (err) => {
+                    res.status(500).send(err.message);
+                });
+
+                archive.pipe(output);
+
+                barcodes.forEach((barcodeData, index) => {
+                    const barcodeText = barcodeData[4];
+                    bwipjs.toBuffer({
+                        bcid: 'code128',
+                        text: barcodeText,
+                        scale: 3,
+                        height: 10,
+                        includetext: true,
+                        textxalign: 'center',
+                    }, (err, png) => {
+                        if (err) {
+                            res.status(500).send(err.message);
+                        } else {
+                            const filename = `${name}-${year}-${type}-${String(lastNumber + index + 1).padStart(3, '0')}.png`;
+                            archive.append(png, { name: filename });
+
+                            if (index === barcodes.length - 1) {
+                                archive.finalize();
+                            }
+                        }
+                    });
+                });
+            });
+        }
+    );
+});
+
 
 app.get('/download-barcode', (req, res) => {
     const barcode = req.query.barcode;
