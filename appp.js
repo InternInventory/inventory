@@ -2328,7 +2328,75 @@ app.post('/hftday', (req, res) => {
 });
 
 // GET endpoint to retrieve specific fields of a record
-app.get('/hftday/:user_id', (req, res) => {
+// app.get('/hftday/:user_id', (req, res) => {
+//   const user_id = req.params.user_id;
+
+//   // Validate input
+//   if (!user_id) {
+//     return res.status(400).json({ message: 'user_id is required' });
+//   }
+
+//   // First, retrieve the user role and username from the database
+//   const getUserRoleSql = `SELECT DISTINCT(l.role), l.user_id, l.username 
+//                           FROM inventory.highft_Record r 
+//                           JOIN inventory.highft_login l ON r.user_id = l.user_id 
+//                           WHERE l.user_id = ?`;
+//   connection.query(getUserRoleSql, [user_id], (err, roleResults) => {
+//     if (err) {
+//       console.error('Error retrieving user role from MySQL:', err);
+//       return res.status(500).json({ message: 'Error retrieving user role from the database.' });
+//     }
+
+//     if (roleResults.length === 0) {
+//       return res.status(404).json({ message: 'User not found' });
+//     }
+
+//     const userRole = roleResults[0].role;
+//     const username = roleResults[0].username;
+//     console.log(userRole, username);
+
+//     let sql;
+//     let values;
+
+//     // Check the user role and prepare the SQL query accordingly
+//     if (userRole === 'Admin') {
+//       sql = `SELECT r.*, l.username 
+//              FROM inventory.highft_Record r 
+//              JOIN inventory.highft_login l ON r.user_id = l.user_id`;
+//       values = [];
+//     } else {
+//       sql = `SELECT r.*, l.username 
+//              FROM inventory.highft_Record r 
+//              JOIN inventory.highft_login l ON r.user_id = l.user_id 
+//              WHERE r.user_id = ?`;
+//       values = [user_id];
+//     }
+
+//     // Retrieve the data from the MySQL database
+//     connection.query(sql, values, (err, results) => {
+//       if (err) {
+//         console.error('Error retrieving data from MySQL:', err);
+//         return res.status(500).json({ message: 'Error retrieving data from the database.' });
+//       }
+
+//       if (results.length === 0) {
+//         return res.status(404).json({ message: 'Record not found' });
+//       }
+
+//       if (userRole !== 'Admin') {
+//         // Add username to each record if the user is not an Admin
+//         results = results.map(result => ({
+//           ...result,
+//           user_id: user_id,
+//           username: username
+//         }));
+//       }
+
+//       return res.json({ result: results, message: 'Records retrieved successfully' });
+//     });
+//   });
+// });
+  app.get('/hftday/:user_id', (req, res) => {
   const user_id = req.params.user_id;
 
   // Validate input
@@ -2353,7 +2421,6 @@ app.get('/hftday/:user_id', (req, res) => {
 
     const userRole = roleResults[0].role;
     const username = roleResults[0].username;
-    console.log(userRole, username);
 
     let sql;
     let values;
@@ -2383,20 +2450,36 @@ app.get('/hftday/:user_id', (req, res) => {
         return res.status(404).json({ message: 'Record not found' });
       }
 
+      // If the user is not an Admin, count the records for the specific user_id
       if (userRole !== 'Admin') {
-        // Add username to each record if the user is not an Admin
-        results = results.map(result => ({
-          ...result,
-          user_id: user_id,
-          username: username
-        }));
-      }
+        const countSql = `SELECT COUNT(*) AS record_count 
+                          FROM inventory.highft_Record 
+                          WHERE user_id = ?`;
+        connection.query(countSql, [user_id], (err, countResults) => {
+          if (err) {
+            console.error('Error counting records from MySQL:', err);
+            return res.status(500).json({ message: 'Error counting records from the database.' });
+          }
 
-      return res.json({ result: results, message: 'Records retrieved successfully' });
+          const recordCount = countResults[0].record_count;
+
+          // Add username and record count to each record
+          results = results.map(result => ({
+            ...result,
+            user_id: user_id,
+            username: username,
+            record_count: recordCount
+          }));
+
+          return res.json({ result: results, message: 'Records retrieved successfully' });
+        });
+      } else {
+        // For Admin, simply return the results without counting
+        return res.json({ result: results, message: 'Records retrieved successfully' });
+      }
     });
   });
 });
-  
 app.post('/hftregister', async (req, res) => {
   const { email, username, password, confirmPassword,role } = req.body;
 
