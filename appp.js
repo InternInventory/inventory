@@ -1192,6 +1192,68 @@ app.post("/send-material-ok", verifyToken, (req, res) => {
     });
 });
 
+app.post("/send-material-ooo", (req, res) => {
+    const {
+        quantity,
+        project_name,
+        item_id,
+        item_name,
+        cost,
+        reciever_name,
+        reciever_contact,
+        Location,
+        chalan_id,
+        description,
+        m_o_d
+    } = req.body;
+
+    if (!quantity || !Array.isArray(item_id) || item_id.length === 0 || !Array.isArray(item_name) || item_name.length === 0 || !Array.isArray(cost) || cost.length === 0) {
+        return res.status(400).json({ error: "Quantity and item details (item_id, item_name, cost) are required and must be arrays." });
+    }
+
+    if (item_id.length !== item_name.length || item_id.length !== cost.length) {
+        return res.status(400).json({ error: "Item details arrays (item_id, item_name, cost) must have the same length." });
+    }
+
+    const item_status = 1;
+
+    const updateRecord = (index, callback) => {
+        if (index >= item_id.length * quantity) {
+            return callback(null);
+        }
+
+        const currentItemIndex = Math.floor(index / quantity);
+        const currentItemID = item_id[currentItemIndex];
+        const currentItemName = item_name[currentItemIndex];
+        const currentCost = cost[currentItemIndex];
+
+        const query = `UPDATE stocks SET item_status = ?, item_name = ?, project_name = ?, cost = ?, reciever_name = ?, reciever_contact = ?, Location = ?, chalan_id = ?, description = ?, m_o_d = ? WHERE item_id = ?`;
+        const values = [item_status, currentItemName, project_name, currentCost, reciever_name, reciever_contact, Location, chalan_id, description, m_o_d, currentItemID];
+
+        connection.query(query, values, (error, results) => {
+            if (error) {
+                return callback(error);
+            }
+
+            if (results.affectedRows === 0) {
+                return callback(new Error("Record not found"));
+            }
+
+            updateRecord(index + 1, callback);
+        });
+    };
+
+    updateRecord(0, (error) => {
+        if (error) {
+            console.error("Error executing query:", error);
+            return res.status(500).json({ error: "Internal server error", details: error.message });
+        }
+
+        res.status(200).json({ message: "Records updated successfully" });
+    });
+});
+
+
 
 // For adding items into stocks table (add-item)
 app.post("/api/add-item", verifyToken, (req, res) => {
@@ -2048,6 +2110,7 @@ app.get('/select-date', (req, res) => {
         res.json({ barcodes: results });
     });
 });
+
 app.get('/barcodess', (req, res) => {
     const { name, year, type, quantity } = req.query;
 
