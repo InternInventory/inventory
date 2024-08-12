@@ -1257,7 +1257,7 @@ app.post("/send-material-ooo", (req, res) => {
 
 // For adding items into stocks table (add-item)
 app.post("/api/add-item", verifyToken, (req, res) => {
-    const { item_id, item_name, supplier_id, stock_holder_name, stock_holder_contact, stock_status, working_status, rack, slot } = req.body;
+    const { item_id, item_name, make, mac_id, supplier_id, stock_holder_name, stock_holder_contact, stock_status, working_status, rack, slot } = req.body;
 
     // Check if all required fields are present
     if (!item_id || !item_name || !supplier_id || !stock_holder_name || !stock_holder_contact || !stock_status || !working_status || !rack || !slot) {
@@ -1281,12 +1281,12 @@ app.post("/api/add-item", verifyToken, (req, res) => {
         }
 
         // Create a SQL query to insert data into the database
-        const query = `INSERT INTO stocks (item_id, item_name, supplier_id, stock_holder_name, stock_holder_contact, stock_status, working_status, rack, slot ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ? )`;
+        const query = `INSERT INTO stocks (item_id, item_name, make, mac_id, supplier_id, stock_holder_name, stock_holder_contact, stock_status, working_status, rack, slot ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ? )`;
 
         // Execute the query
         connection.query(
             query,
-            [item_id, item_name, supplier_id, stock_holder_name, stock_holder_contact, stock_status, working_status, rack, slot],
+            [item_id, item_name, make, mac_id, supplier_id, stock_holder_name, stock_holder_contact, stock_status, working_status, rack, slot],
             (error, results) => {
                 if (error) {
                     console.error("Error executing query:", error);
@@ -1300,6 +1300,93 @@ app.post("/api/add-item", verifyToken, (req, res) => {
         );
     });
 });
+
+app.post("/api/add-item-ooo ", verifyToken, (req, res) => {
+    const { quantity, stock_holder_name, stock_holder_contact, stock_status, rack, slot, supplier_id, item_name, item_id, make, mac_id, working_status } = req.body;
+
+    // Validate required fields
+    if (!quantity || !supplier_id || !stock_holder_name || !stock_holder_contact || !stock_status || !rack || !slot || !item_id || !item_name || !make || !mac_id || !working_status) {
+        res.status(400).json({ error: "Missing required fields" });
+        return;
+    }
+
+    if (!Array.isArray(item_id) || item_id.length === 0) {
+        res.status(400).json({ error: "item_id should be a non-empty array" });
+        return;
+    }
+
+    // Initialize an array to collect errors
+    let insertionErrors = [];
+    let itemsProcessed = 0;
+
+    // Iterate over the item_id array and check existence before insertion
+    item_id.forEach((currentItemId, index) => {
+        const currentItemName = item_name[index];
+        const currentMake = make[index];
+        const currentMacId = mac_id[index];
+        const currentWorkingStatus = working_status[index];
+
+        if (!currentItemId || !currentItemName || !currentMake || !currentMacId || !currentWorkingStatus) {
+            insertionErrors.push({ item_id: currentItemId, error: "Missing required item fields" });
+            return;
+        }
+
+        // Check if the item_id already exists in the database
+        const checkQuery = 'SELECT * FROM stocks WHERE item_id = ?';
+        connection.query(checkQuery, [currentItemId], (checkError, checkResults) => {
+            if (checkError) {
+                console.error(`Error checking item_id ${currentItemId}:`, checkError);
+                insertionErrors.push({ item_id: currentItemId, error: "Database check error" });
+                itemsProcessed++;
+                if (itemsProcessed === item_id.length) {
+                    sendFinalResponse();
+                }
+                return;
+            }
+
+            if (checkResults.length > 0) {
+                // item_id already exists
+                insertionErrors.push({ item_id: currentItemId, error: "Item ID already exists" });
+                itemsProcessed++;
+                if (itemsProcessed === item_id.length) {
+                    sendFinalResponse();
+                }
+            } else {
+                // Proceed with insertion since item_id does not exist
+                const insertQuery = `
+                    INSERT INTO stocks 
+                    (item_id, item_name, make, mac_id, supplier_id, stock_holder_name, stock_holder_contact, stock_status, working_status, rack, slot) 
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                `;
+                const queryValues = [currentItemId, currentItemName, currentMake, currentMacId, supplier_id, stock_holder_name, stock_holder_contact, stock_status, currentWorkingStatus, rack, slot];
+
+                connection.query(insertQuery, queryValues, (insertError, results) => {
+                    itemsProcessed++;
+                    if (insertError) {
+                        console.error(`Error inserting item with ID ${currentItemId}:`, insertError);
+                        insertionErrors.push({ item_id: currentItemId, error: "Database insertion error" });
+                    }
+                    if (itemsProcessed === item_id.length) {
+                        sendFinalResponse();
+                    }
+                });
+            }
+        });
+    });
+
+    // Function to send the final response after all items are processed
+    function sendFinalResponse() {
+        if (insertionErrors.length > 0) {
+            res.status(207).json({ message: "Some items could not be inserted", errors: insertionErrors });
+        } else {
+            res.status(201).json({ message: "All items inserted successfully" });
+        }
+    }
+});
+
+
+
+
 app.get("/supplier-dropdown", (req, res) => {
     connection.query("SELECT distinct name, id FROM suppliers", (error, results) => {
         if (error) {
