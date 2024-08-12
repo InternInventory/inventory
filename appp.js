@@ -1301,7 +1301,7 @@ app.post("/api/add-item", verifyToken, (req, res) => {
     });
 });
 
-app.post("/api/add-item-ooo ", verifyToken, (req, res) => {
+app.post("/api/add-item-ooo ", (req, res) => {
     const { quantity, stock_holder_name, stock_holder_contact, stock_status, rack, slot, supplier_id, item_name, item_id, make, mac_id, working_status } = req.body;
 
     // Validate required fields
