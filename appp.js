@@ -21,6 +21,7 @@ const bwipjs = require('bwip-js');
 const archiver = require('archiver');
 const { createCanvas } = require('canvas');
 const Barcode = require('jsbarcode');
+const { isWeakMap } = require('util/types');
 /// hellol
 
 app.use(bodyParser.json());
@@ -901,7 +902,7 @@ app.get('/outwards', verifyToken, (req, res) => {
     });
 })
 
-function generatePDF(data) {
+function generatePDF(data, userChalanId) {
     return new Promise((resolve, reject) => {
         const doc = new PDFDocument({ size: [595.28, 955.89] });
         const buffers = [];
@@ -910,6 +911,10 @@ function generatePDF(data) {
             const pdfData = Buffer.concat(buffers);
             resolve(pdfData);
         });
+
+        // Filter data by the user's chalan_id
+        const filteredData = data.filter(row => row.chalan_id === userChalanId);
+
         data.forEach(row => {
             doc.rect(50, 50, 514, 700).stroke();
             doc.image('./buildint.png', 457, 55, { width: 100, height: 25 });
@@ -935,6 +940,7 @@ function generatePDF(data) {
             doc.font('Times-Bold').fontSize(15).text('Reverse Charge :  ', 55, 300, { width: 280, height: 5, align: 'left' })
             doc.rect(306, 295, 257, 25).stroke();
             doc.font('Times-Bold').fontSize(15).text('Reverse Charge  :  ', 310, 300, { width: 280, height: 5, align: 'left' })
+
             doc.rect(50, 320, 257, 65).stroke();
             doc.font('Times-Bold').fontSize(15).text('Billed To :  ', 55, 325, { width: 280, height: 5, align: 'left' })
             doc.font('Times-Bold').fontSize(12).text('Name :  Lightforce Buildint Pvt Ltd', 55, 345, { width: 280, height: 5, align: 'left' })
@@ -944,23 +950,43 @@ function generatePDF(data) {
             doc.font('Times-Bold').fontSize(15).text(`Shipped To :  ${row.reciever_name}`, 310, 325, { width: 280, height: 5, align: 'left' })
             doc.font('Times-Bold').fontSize(12).text(`Name :  ${row.Location}`, 310, 345, { width: 280, height: 5, align: 'left' })
             doc.rect(50, 385, 50, 25).stroke();
+
             doc.font('Times-Bold').fontSize(10).text('SR. NO: ', 53, 395, { width: 280, height: 5, align: 'left' })
             doc.rect(100, 385, 207, 25).stroke();
             doc.font('Times-Bold').fontSize(10).text('1', 53, 420)
             doc.font('Times-Bold').fontSize(10).text(`Description of Goods:  `, 150, 395, { width: 280, height: 5, align: 'left' })
             doc.rect(306, 385, 50, 25).stroke();
-            doc.font('Times-Bold').fontSize(10).text(`${row.item_name}`, 120, 420)
+
+            let startY = 420;
+            const lineHeight = 12;
+
+            data.forEach(row => {
+                doc.font('Times-Bold').fontSize(10).text(row.item_name, 120, startY);
+                startY += lineHeight; // Move down for the next item
+            });
+
             doc.font('Times-Bold').fontSize(10).text('Qty  ', 315, 395, { width: 280, height: 5, align: 'left' })
             doc.rect(356, 385, 207, 25).stroke();
             doc.font('Times-Bold').fontSize(10).text(`${row.item_status}`, 315, 420)
             doc.font('Times-Bold').fontSize(10).text('Approx Amount  ', 420, 395, { width: 280, height: 5, align: 'left' })
             doc.rect(50, 410, 50, 150).stroke();
-            doc.font('Times-Bold').fontSize(10).text(`${row.cost}`, 400, 420)
+
+            let start = 420;
+            const lineH = 12;
+
+            data.forEach(row => {
+                doc.font('Times-Bold').fontSize(10).text(row.cost, 400, start);
+                start += lineH; // Move down for the next item
+            });
+            //doc.font('Times-Bold').fontSize(10).text(`${row.cost}`, 400, 420)
+
             doc.rect(100, 410, 207, 150).stroke();
             doc.rect(306, 410, 207, 150).stroke();
             doc.rect(356, 410, 207, 150).stroke();
             doc.rect(50, 560, 50, 20).stroke();
             doc.rect(100, 560, 207, 20).stroke();
+
+            
             doc.font('Times-Bold').fontSize(10).text('Total:', 140, 565, { width: 280, height: 5, align: 'center' })
             doc.rect(306, 560, 207, 20).stroke();
             doc.rect(356, 560, 207, 20).stroke();
@@ -977,6 +1003,7 @@ function generatePDF(data) {
 
     });
 }
+
 app.get('/generatepdf', async (req, res) => {
     try {
         console.log("inside try block")
@@ -1256,7 +1283,7 @@ app.post("/send-material-ooo", (req, res) => {
 
 
 // For adding items into stocks table (add-item)
-app.post("/api/add-item", verifyToken, (req, res) => {
+app.post("/api/add-item", (req, res) => {
     const { item_id, item_name, make, mac_id, supplier_id, stock_holder_name, stock_holder_contact, stock_status, working_status, rack, slot } = req.body;
 
     // Check if all required fields are present
