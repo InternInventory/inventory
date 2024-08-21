@@ -1357,7 +1357,7 @@ app.post("/api/add-item-ooo", (req, res) => {
             insertionErrors.push({ item_id: currentItemId, error: "Missing required item fields" });
             return;
         }
-
+//
         // Check if the item_id already exists in the database
         const checkQuery = 'SELECT * FROM stocks WHERE item_id = ?';
         connection.query(checkQuery, [currentItemId], (checkError, checkResults) => {
