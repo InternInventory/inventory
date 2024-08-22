@@ -2435,7 +2435,37 @@ app.get('/download-barcode', (req, res) => {
     });
 });
 
+app.get('/gen-barcode', (req, res) => {
+    const { item_id } = req.query;
 
+    if (!item_id) {
+        return res.status(400).send('item_id query parameter is required');
+    }
+
+    try {
+        // Generate the barcode
+        bwipjs.toBuffer({
+            bcid:        'code128',       // Barcode type
+            text:        item_id,         // Text to encode in the barcode
+            scale:       3,               // 3x scaling factor
+            height:      10,              // Bar height, in millimeters
+            includetext: true,            // Show the text below the barcode
+            textxalign:  'center',        // Center-align the text
+        }, (err, png) => {
+            if (err) {
+                res.status(500).send('Error generating barcode');
+            } else {
+                // Set response headers for downloading the barcode
+                res.setHeader('Content-Type', 'image/png');
+                res.setHeader('Content-Disposition', `attachment; filename=barcode-${item_id}.png`);
+                res.send(png);
+            }
+        });
+
+    } catch (err) {
+        res.status(500).send('Error processing request');
+    }
+});
 
 
 
