@@ -21,7 +21,7 @@ const bwipjs = require('bwip-js');
 const archiver = require('archiver');
 const { createCanvas } = require('canvas');
 const Barcode = require('jsbarcode');
-const { isWeakMap } = require('util/types');
+//const { isWeakMap } = require('util/types');
 /// hellol
 
 app.use(bodyParser.json());
