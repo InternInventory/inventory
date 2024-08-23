@@ -1332,125 +1332,125 @@ app.post("/api/add-item", (req, res) => {
     });
 });
 
-app.post("/api/add-item-ooo", (req, res) => {
-    const { quantity, stock_holder_name, stock_holder_contact, stock_status, rack, slot, supplier_id, item_name, item_id, make, mac_id, working_status } = req.body;
+// app.post("/api/add-item-ooo", (req, res) => {
+//     const { quantity, stock_holder_name, stock_holder_contact, stock_status, rack, slot, supplier_id, item_name, item_id, make, mac_id, working_status } = req.body;
 
-    console.log("Data from body", req.body)
-    console.log("Item name", item_name)
+//     console.log("Data from body", req.body)
+//     console.log("Item name", item_name)
 
-    // Validate required fields
-    if (!quantity || !supplier_id || !stock_holder_name || !stock_holder_contact || !stock_status || !rack || !slot || !item_id || !item_name || !working_status) {
-        res.status(400).json({ error: "Missing required fields" });
-        return;
-    }
+//     // Validate required fields
+//     if (!quantity || !supplier_id || !stock_holder_name || !stock_holder_contact || !stock_status || !rack || !slot || !item_id || !item_name || !working_status) {
+//         res.status(400).json({ error: "Missing required fields" });
+//         return;
+//     }
 
-    if (!Array.isArray(item_id) || item_id.length === 0) {
-        res.status(400).json({ error: "item_id should be a non-empty array" });
-        return;
-    }
+//     if (!Array.isArray(item_id) || item_id.length === 0) {
+//         res.status(400).json({ error: "item_id should be a non-empty array" });
+//         return;
+//     }
 
-    // Initialize an array to collect errors
-    let insertionErrors = [];
-    let itemsProcessed = 0;
+//     // Initialize an array to collect errors
+//     let insertionErrors = [];
+//     let itemsProcessed = 0;
 
-    // Iterate over the item_id array and check existence before insertion
-    item_id.forEach((currentItemId, index) => {
-        const currentItemName = item_name[index];
-        const currentMake = make[index];
-        const currentMacId = mac_id[index];
-        const currentWorkingStatus = working_status[index];
+//     // Iterate over the item_id array and check existence before insertion
+//     item_id.forEach((currentItemId, index) => {
+//         const currentItemName = item_name[index];
+//         const currentMake = make[index];
+//         const currentMacId = mac_id[index];
+//         const currentWorkingStatus = working_status[index];
 
-        // if (!currentItemId || !currentItemName || !currentMake || !currentMacId || !currentWorkingStatus) {
-        //     insertionErrors.push({ item_id: currentItemId, error: "Missing required item fields" });
-        //     return;
-        // }
+//         // if (!currentItemId || !currentItemName || !currentMake || !currentMacId || !currentWorkingStatus) {
+//         //     insertionErrors.push({ item_id: currentItemId, error: "Missing required item fields" });
+//         //     return;
+//         // }
 
-        // For testing purpose
-        if (!currentItemId) {
-            console.log("Missing field: item_id");
-            insertionErrors.push({ item_id: currentItemId, error: "Missing required item_id" });
-        }
+//         // For testing purpose
+//         if (!currentItemId) {
+//             console.log("Missing field: item_id");
+//             insertionErrors.push({ item_id: currentItemId, error: "Missing required item_id" });
+//         }
 
-        if (!currentItemName) {
-            console.log("Missing field: item_name");
-            insertionErrors.push({ item_id: currentItemId, error: "Missing required item_name" });
-        }
+//         if (!currentItemName) {
+//             console.log("Missing field: item_name");
+//             insertionErrors.push({ item_id: currentItemId, error: "Missing required item_name" });
+//         }
 
-        if (!currentMake) {
-            console.log("Missing field: make");
-            insertionErrors.push({ item_id: currentItemId, error: "Missing required make" });
-        }
+//         if (!currentMake) {
+//             console.log("Missing field: make");
+//             insertionErrors.push({ item_id: currentItemId, error: "Missing required make" });
+//         }
 
-        if (!currentMacId) {
-            console.log("Missing field: mac_id");
-            insertionErrors.push({ item_id: currentItemId, error: "Missing required mac_id" });
-        }
+//         if (!currentMacId) {
+//             console.log("Missing field: mac_id");
+//             insertionErrors.push({ item_id: currentItemId, error: "Missing required mac_id" });
+//         }
 
-        if (!currentWorkingStatus) {
-            console.log("Missing field: working_status");
-            insertionErrors.push({ item_id: currentItemId, error: "Missing required working_status" });
-        }
+//         if (!currentWorkingStatus) {
+//             console.log("Missing field: working_status");
+//             insertionErrors.push({ item_id: currentItemId, error: "Missing required working_status" });
+//         }
 
-        // if (!currentItemId || !currentItemName || !currentMake || !currentMacId || !currentWorkingStatus) {
-        //     return;
-        // }
+//         // if (!currentItemId || !currentItemName || !currentMake || !currentMacId || !currentWorkingStatus) {
+//         //     return;
+//         // }
 
 
-        //
-        // Check if the item_id already exists in the database
-        const checkQuery = 'SELECT * FROM stocks WHERE item_id = ?';
-        connection.query(checkQuery, [currentItemId], (checkError, checkResults) => {
-            if (checkError) {
-                console.error(`Error checking item_id ${currentItemId}:`, checkError);
-                insertionErrors.push({ item_id: currentItemId, error: "Database check error" });
-                itemsProcessed++;
-                if (itemsProcessed === item_id.length) {
-                    sendFinalResponse();
-                }
-                return;
-            }
+//         //
+//         // Check if the item_id already exists in the database
+//         const checkQuery = 'SELECT * FROM stocks WHERE item_id = ?';
+//         connection.query(checkQuery, [currentItemId], (checkError, checkResults) => {
+//             if (checkError) {
+//                 console.error(`Error checking item_id ${currentItemId}:`, checkError);
+//                 insertionErrors.push({ item_id: currentItemId, error: "Database check error" });
+//                 itemsProcessed++;
+//                 if (itemsProcessed === item_id.length) {
+//                     sendFinalResponse();
+//                 }
+//                 return;
+//             }
 
-            if (checkResults.length > 0) {
-                // item_id already exists
-                insertionErrors.push({ item_id: currentItemId, error: "Item ID already exists" });
-                itemsProcessed++;
-                if (itemsProcessed === item_id.length) {
-                    sendFinalResponse();
-                }
-            } else {
-                // Proceed with insertion since item_id does not exist
-                const insertQuery = `
-                    INSERT INTO stocks 
-                    (item_id, item_name, make, mac_id, supplier_id, stock_holder_name, stock_holder_contact, stock_status, working_status, rack, slot) 
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                `;
-                const queryValues = [currentItemId, currentItemName, currentMake, currentMacId, supplier_id, stock_holder_name, stock_holder_contact, stock_status, currentWorkingStatus, rack, slot];
+//             if (checkResults.length > 0) {
+//                 // item_id already exists
+//                 insertionErrors.push({ item_id: currentItemId, error: "Item ID already exists" });
+//                 itemsProcessed++;
+//                 if (itemsProcessed === item_id.length) {
+//                     sendFinalResponse();
+//                 }
+//             } else {
+//                 // Proceed with insertion since item_id does not exist
+//                 const insertQuery = `
+//                     INSERT INTO stocks 
+//                     (item_id, item_name, make, mac_id, supplier_id, stock_holder_name, stock_holder_contact, stock_status, working_status, rack, slot) 
+//                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+//                 `;
+//                 const queryValues = [currentItemId, currentItemName, currentMake, currentMacId, supplier_id, stock_holder_name, stock_holder_contact, stock_status, currentWorkingStatus, rack, slot];
 
-                connection.query(insertQuery, queryValues, (insertError, results) => {
-                    itemsProcessed++;
-                    if (insertError) {
-                        console.error(`Error inserting item with ID ${currentItemId}:`, insertError);
-                        insertionErrors.push({ item_id: currentItemId, error: "Database insertion error" });
-                    }
-                    if (itemsProcessed === item_id.length) {
-                        sendFinalResponse();
-                    }
-                });
-            }
-        });
-    });
+//                 connection.query(insertQuery, queryValues, (insertError, results) => {
+//                     itemsProcessed++;
+//                     if (insertError) {
+//                         console.error(`Error inserting item with ID ${currentItemId}:`, insertError);
+//                         insertionErrors.push({ item_id: currentItemId, error: "Database insertion error" });
+//                     }
+//                     if (itemsProcessed === item_id.length) {
+//                         sendFinalResponse();
+//                     }
+//                 });
+//             }
+//         });
+//     });
 
-    console.log("All errors", insertionErrors);
+//     console.log("All errors", insertionErrors);
 
-    // Function to send the final response after all items are processed
-    function sendFinalResponse() {
-        if (insertionErrors.length > 0) {
-            res.status(207).json({ message: "Some items could not be inserted", errors: insertionErrors });
-        } else {
-            res.status(201).json({ message: "All items inserted successfully" });
-        }
-    }
-});
+//     // Function to send the final response after all items are processed
+//     function sendFinalResponse() {
+//         if (insertionErrors.length > 0) {
+//             res.status(207).json({ message: "Some items could not be inserted", errors: insertionErrors });
+//         } else {
+//             res.status(201).json({ message: "All items inserted successfully" });
+//         }
+//     }
+// });
 
 app.post("/api/add-item-oooo", async (req, res) => {
     const { quantity, stock_holder_name, stock_holder_contact, stock_status, rack, slot, supplier_id, item_name, item_id, make, mac_id, working_status } = req.body;
@@ -1505,6 +1505,76 @@ app.post("/api/add-item-oooo", async (req, res) => {
     }
 });
 
+app.post("/api/add-item-ooo", (req, res) => {
+    const { quantity, stock_holder_name, stock_holder_contact, rack, slot, supplier_id, item_name } = req.body;
+
+    console.log("Data from body", req.body);
+    console.log("Item name", item_name);
+
+    // Validate required fields
+    if (!quantity || !supplier_id || !stock_holder_name || !stock_holder_contact || !rack || !slot || !item_name) {
+        return res.status(400).json({ error: "Missing required fields" });
+    } else {
+        let query = `SELECT item_id FROM inventory.stocks WHERE item_name = ? ORDER BY 1 DESC LIMIT 1;`;
+        connection.query(query, [item_name], (error, result) => {
+            if (error) {
+                console.log("Error fetching item name details.");
+                return res.status(500).json({ error: error });
+            } else if (result.length === 0) {
+                // No existing item_id found, start from 01
+                const newBaseItemId = `LBPL/Aug-24/01/SIFA/i-ATM`;
+                let values = [];
+
+                for (let i = 1; i <= quantity; i++) {
+                    const itemId = `LBPL/Aug-24/${String(i).padStart(2, '0')}/SIFA/i-ATM`;
+                    console.log("New item ids", itemId)
+                    values.push([itemId, item_name, supplier_id, stock_holder_name, stock_holder_contact, rack, slot]);
+                }
+
+                const insertQuery = `INSERT INTO inventory.stocks 
+                                     (item_id, item_name, supplier_id, stock_holder_name, stock_holder_contact, rack, slot) 
+                                     VALUES ?`;
+
+                connection.query(insertQuery, [values], (error) => {
+                    if (error) {
+                        console.log("Error inserting new items.");
+                        return res.status(500).json({ error: error });
+                    }
+                    return res.status(200).json({ message: "Items added successfully!" });
+                });
+            } else {
+                // Existing item_id found, increment the last number
+                let lastItemId = result[0].item_id;
+                let lastNumber = parseInt(lastItemId.split('/')[2]);
+                let values = [];
+
+                console.log("Last item id", lastItemId)
+                console.log("Last item id", lastNumber)
+
+
+                for (let i = 1; i <= quantity; i++) {
+                    const newItemNumber = lastNumber + i;
+                    const newItemId = `LBPL/Aug-24/${String(newItemNumber).padStart(2, '0')}/SIFA/i-ATM`;
+                    console.log("New item id from previous data", newItemId)
+
+                    values.push([newItemId, item_name, supplier_id, stock_holder_name, stock_holder_contact, rack, slot]);
+                }
+
+                const insertQuery = `INSERT INTO inventory.stocks 
+                                     (item_id, item_name, supplier_id, stock_holder_name, stock_holder_contact, rack, slot) 
+                                     VALUES ?`;
+
+                connection.query(insertQuery, [values], (error) => {
+                    if (error) {
+                        console.log("Error inserting new items.");
+                        return res.status(500).json({ error: error });
+                    }
+                    return res.status(200).json({ message: "Items added successfully!" });
+                });
+            }
+        });
+    }
+});
 
 
 
