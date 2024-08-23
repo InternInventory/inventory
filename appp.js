@@ -1392,7 +1392,6 @@ app.post("/api/add-item-ooo", (req, res) => {
         }
 
         if (!currentItemId || !currentItemName || !currentMake || !currentMacId || !currentWorkingStatus) {
-            res.status(504).json({ message: "Shubham didn't check this part"});
             return;
         }
 
