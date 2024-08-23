@@ -1339,7 +1339,7 @@ app.post("/api/add-item-ooo", (req, res) => {
     console.log("Item name", item_name)
 
     // Validate required fields
-    if (!quantity || !supplier_id || !stock_holder_name || !stock_holder_contact || !stock_status || !rack || !slot || !item_id || !item_name || !make || !mac_id || !working_status) {
+    if (!quantity || !supplier_id || !stock_holder_name || !stock_holder_contact || !stock_status || !rack || !slot || !item_id || !item_name || !working_status) {
         res.status(400).json({ error: "Missing required fields" });
         return;
     }
@@ -1449,6 +1449,59 @@ app.post("/api/add-item-ooo", (req, res) => {
         } else {
             res.status(201).json({ message: "All items inserted successfully" });
         }
+    }
+});
+
+app.post("/api/add-item-oooo", async (req, res) => {
+    const { quantity, stock_holder_name, stock_holder_contact, stock_status, rack, slot, supplier_id, item_name, item_id, make, mac_id, working_status } = req.body;
+
+    // Validate required fields
+    if (!quantity || !supplier_id || !stock_holder_name || !stock_holder_contact || !stock_status || !rack || !slot || !Array.isArray(item_id) || item_id.length === 0) {
+        return res.status(400).json({ error: "Missing required fields" });
+    }
+
+    let insertionErrors = [];
+    let itemsProcessed = 0;
+
+    const insertPromises = item_id.map(async (currentItemId, index) => {
+        const currentItemName = item_name[index];
+        const currentMake = make[index];
+        const currentMacId = mac_id[index];
+        const currentWorkingStatus = working_status[index];
+
+        if (!currentItemId || !currentItemName || !currentMake || !currentMacId || !currentWorkingStatus) {
+            insertionErrors.push({ item_id: currentItemId, error: "Missing required item fields" });
+            itemsProcessed++;
+            return;
+        }
+
+        try {
+            const [checkResults] = await connection.promise().query('SELECT * FROM stocks WHERE item_id = ?', [currentItemId]);
+            if (checkResults.length > 0) {
+                insertionErrors.push({ item_id: currentItemId, error: "Item ID already exists" });
+            } else {
+                const insertQuery = `
+                    INSERT INTO stocks 
+                    (item_id, item_name, make, mac_id, supplier_id, stock_holder_name, stock_holder_contact, stock_status, working_status, rack, slot) 
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                `;
+                const queryValues = [currentItemId, currentItemName, currentMake, currentMacId, supplier_id, stock_holder_name, stock_holder_contact, stock_status, currentWorkingStatus, rack, slot];
+                await connection.promise().query(insertQuery, queryValues);
+            }
+        } catch (error) {
+            console.error(`Error processing item with ID ${currentItemId}:`, error);
+            insertionErrors.push({ item_id: currentItemId, error: "Database error" });
+        } finally {
+            itemsProcessed++;
+        }
+    });
+
+    await Promise.all(insertPromises);
+
+    if (insertionErrors.length > 0) {
+        res.status(207).json({ message: "Some items could not be inserted", errors: insertionErrors });
+    } else {
+        res.status(201).json({ message: "All items inserted successfully" });
     }
 });
 
