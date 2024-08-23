@@ -35,7 +35,7 @@ const corsOptions = {
 };
 
 app.use(cors());
-app.use(cors(corsOptions));
+//app.use(cors(corsOptions));
 //MySQL connection configuration
 const connection = mysql.createPool({
     host: process.env.DB_HOST,
@@ -915,7 +915,10 @@ function generatePDF(data, userChalanId) {
         // Filter data by the user's chalan_id
         const filteredData = data.filter(row => row.chalan_id === userChalanId);
 
+        let totalCost = 0; // Initialize total cost variable
+
         data.forEach(row => {
+            
             doc.rect(50, 50, 514, 700).stroke();
             doc.image('./buildint.png', 457, 55, { width: 100, height: 25 });
             doc.font('Times-Bold').fontSize(14).text('DELIVERY CHALLAN', 55, 115, { width: 504, height: 35, align: 'left' })
@@ -963,6 +966,8 @@ function generatePDF(data, userChalanId) {
             data.forEach(row => {
                 doc.font('Times-Bold').fontSize(10).text(row.item_name, 120, startY);
                 startY += lineHeight; // Move down for the next item
+                totalCost += Number(row.cost);
+                
             });
 
             doc.font('Times-Bold').fontSize(10).text('Qty  ', 315, 395, { width: 280, height: 5, align: 'left' })
@@ -985,8 +990,7 @@ function generatePDF(data, userChalanId) {
             doc.rect(356, 410, 207, 150).stroke();
             doc.rect(50, 560, 50, 20).stroke();
             doc.rect(100, 560, 207, 20).stroke();
-
-            
+            doc.font('Times-Bold').fontSize(10).text(`${totalCost}`, 450, start);
             doc.font('Times-Bold').fontSize(10).text('Total:', 140, 565, { width: 280, height: 5, align: 'center' })
             doc.rect(306, 560, 207, 20).stroke();
             doc.rect(356, 560, 207, 20).stroke();
@@ -998,7 +1002,7 @@ function generatePDF(data, userChalanId) {
             doc.font('Times-Bold').fontSize(10).text('Received By : _____________', 240, 720, { width: 280, height: 5, align: 'right' })
 
         });
-        // Finalize the PDF and close the stream
+        // Finalize the PDF and close the stream    
         doc.end();
 
     });
@@ -1357,7 +1361,7 @@ app.post("/api/add-item-ooo", (req, res) => {
             insertionErrors.push({ item_id: currentItemId, error: "Missing required item fields" });
             return;
         }
-//
+        //
         // Check if the item_id already exists in the database
         const checkQuery = 'SELECT * FROM stocks WHERE item_id = ?';
         connection.query(checkQuery, [currentItemId], (checkError, checkResults) => {
@@ -2445,12 +2449,12 @@ app.get('/gen-barcode', (req, res) => {
     try {
         // Generate the barcode
         bwipjs.toBuffer({
-            bcid:        'code128',       // Barcode type
-            text:        item_id,         // Text to encode in the barcode
-            scale:       3,               // 3x scaling factor
-            height:      10,              // Bar height, in millimeters
+            bcid: 'code128',       // Barcode type
+            text: item_id,         // Text to encode in the barcode
+            scale: 3,               // 3x scaling factor
+            height: 10,              // Bar height, in millimeters
             includetext: true,            // Show the text below the barcode
-            textxalign:  'center',        // Center-align the text
+            textxalign: 'center',        // Center-align the text
         }, (err, png) => {
             if (err) {
                 res.status(500).send('Error generating barcode');
