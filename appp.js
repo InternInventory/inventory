@@ -918,7 +918,7 @@ function generatePDF(data, userChalanId) {
         let totalCost = 0; // Initialize total cost variable
 
         data.forEach(row => {
-            
+
             doc.rect(50, 50, 514, 700).stroke();
             doc.image('./buildint.png', 457, 55, { width: 100, height: 25 });
             doc.font('Times-Bold').fontSize(14).text('DELIVERY CHALLAN', 55, 115, { width: 504, height: 35, align: 'left' })
@@ -967,7 +967,7 @@ function generatePDF(data, userChalanId) {
                 doc.font('Times-Bold').fontSize(10).text(row.item_name, 120, startY);
                 startY += lineHeight; // Move down for the next item
                 //totalCost += Number(row.cost);
-                
+
             });
 
             doc.font('Times-Bold').fontSize(10).text('Qty  ', 315, 395, { width: 280, height: 5, align: 'left' })
@@ -1335,8 +1335,8 @@ app.post("/api/add-item", (req, res) => {
 app.post("/api/add-item-ooo", (req, res) => {
     const { quantity, stock_holder_name, stock_holder_contact, stock_status, rack, slot, supplier_id, item_name, item_id, make, mac_id, working_status } = req.body;
 
-    console.log(req.body)
-    console.log(item_name)
+    console.log("Data from body", req.body)
+    console.log("Item name", item_name)
 
     // Validate required fields
     if (!quantity || !supplier_id || !stock_holder_name || !stock_holder_contact || !stock_status || !rack || !slot || !item_id || !item_name || !make || !mac_id || !working_status) {
@@ -1360,10 +1360,42 @@ app.post("/api/add-item-ooo", (req, res) => {
         const currentMacId = mac_id[index];
         const currentWorkingStatus = working_status[index];
 
+        // if (!currentItemId || !currentItemName || !currentMake || !currentMacId || !currentWorkingStatus) {
+        //     insertionErrors.push({ item_id: currentItemId, error: "Missing required item fields" });
+        //     return;
+        // }
+
+        // For testing purpose
+        if (!currentItemId) {
+            console.log("Missing field: item_id");
+            insertionErrors.push({ item_id: currentItemId, error: "Missing required item_id" });
+        }
+
+        if (!currentItemName) {
+            console.log("Missing field: item_name");
+            insertionErrors.push({ item_id: currentItemId, error: "Missing required item_name" });
+        }
+
+        if (!currentMake) {
+            console.log("Missing field: make");
+            insertionErrors.push({ item_id: currentItemId, error: "Missing required make" });
+        }
+
+        if (!currentMacId) {
+            console.log("Missing field: mac_id");
+            insertionErrors.push({ item_id: currentItemId, error: "Missing required mac_id" });
+        }
+
+        if (!currentWorkingStatus) {
+            console.log("Missing field: working_status");
+            insertionErrors.push({ item_id: currentItemId, error: "Missing required working_status" });
+        }
+
         if (!currentItemId || !currentItemName || !currentMake || !currentMacId || !currentWorkingStatus) {
-            insertionErrors.push({ item_id: currentItemId, error: "Missing required item fields" });
             return;
         }
+
+
         //
         // Check if the item_id already exists in the database
         const checkQuery = 'SELECT * FROM stocks WHERE item_id = ?';
@@ -1408,8 +1440,8 @@ app.post("/api/add-item-ooo", (req, res) => {
         });
     });
 
-    console.log(insertionErrors);
-    
+    console.log("All errors", insertionErrors);
+
     // Function to send the final response after all items are processed
     function sendFinalResponse() {
         if (insertionErrors.length > 0) {
