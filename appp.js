@@ -966,7 +966,7 @@ function generatePDF(data, userChalanId) {
             data.forEach(row => {
                 doc.font('Times-Bold').fontSize(10).text(row.item_name, 120, startY);
                 startY += lineHeight; // Move down for the next item
-                totalCost += Number(row.cost);
+                //totalCost += Number(row.cost);
                 
             });
 
@@ -1335,6 +1335,9 @@ app.post("/api/add-item", (req, res) => {
 app.post("/api/add-item-ooo", (req, res) => {
     const { quantity, stock_holder_name, stock_holder_contact, stock_status, rack, slot, supplier_id, item_name, item_id, make, mac_id, working_status } = req.body;
 
+    console.log(req.body)
+    console.log(item_name)
+
     // Validate required fields
     if (!quantity || !supplier_id || !stock_holder_name || !stock_holder_contact || !stock_status || !rack || !slot || !item_id || !item_name || !make || !mac_id || !working_status) {
         res.status(400).json({ error: "Missing required fields" });
@@ -1405,6 +1408,8 @@ app.post("/api/add-item-ooo", (req, res) => {
         });
     });
 
+    console.log(insertionErrors);
+    
     // Function to send the final response after all items are processed
     function sendFinalResponse() {
         if (insertionErrors.length > 0) {
