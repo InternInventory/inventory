@@ -1391,9 +1391,9 @@ app.post("/api/add-item-ooo", (req, res) => {
             insertionErrors.push({ item_id: currentItemId, error: "Missing required working_status" });
         }
 
-        if (!currentItemId || !currentItemName || !currentMake || !currentMacId || !currentWorkingStatus) {
-            return;
-        }
+        // if (!currentItemId || !currentItemName || !currentMake || !currentMacId || !currentWorkingStatus) {
+        //     return;
+        // }
 
 
         //
