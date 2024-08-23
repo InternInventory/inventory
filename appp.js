@@ -1509,7 +1509,7 @@ app.post("/api/add-item-ooo", (req, res) => {
     const { quantity, stock_holder_name, stock_holder_contact, rack, slot, supplier_id, item_name } = req.body;
 
     console.log("Data from body", req.body);
-    console.log("Item name", item_name);
+    // console.log("Item name", item_name);
 
     // Validate required fields
     if (!quantity || !supplier_id || !stock_holder_name || !stock_holder_contact || !rack || !slot || !item_name) {
@@ -1549,7 +1549,7 @@ app.post("/api/add-item-ooo", (req, res) => {
                 let values = [];
 
                 console.log("Last item id", lastItemId)
-                console.log("Last item id", lastNumber)
+                console.log("Last item number", lastNumber)
 
 
                 for (let i = 1; i <= quantity; i++) {
