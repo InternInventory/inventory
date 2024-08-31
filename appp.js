@@ -1284,6 +1284,69 @@ app.post("/send-material-ooo", (req, res) => {
     });
 });
 
+app.post("/send-material-new", (req, res) => {
+    const {
+        quantity,
+        project_name,
+        item_id,
+        item_name,
+        cost,
+        reciever_name,
+        reciever_contact,
+        Location,
+        chalan_id,
+        description,
+        m_o_d
+    } = req.body;
+
+    if (!quantity || !Array.isArray(item_id) || item_id.length === 0 || !Array.isArray(item_name) || item_name.length === 0 || !Array.isArray(cost) || cost.length === 0) {
+        return res.status(400).json({ error: "Quantity and item details (item_id, item_name, cost) are required and must be arrays." });
+    }
+
+    if (item_id.length !== item_name.length || item_id.length !== cost.length) {
+        return res.status(400).json({ error: "Item details arrays (item_id, item_name, cost) must have the same length." });
+    }
+
+    const item_status = 1;
+
+    const updateRecord = (index, callback) => {
+        if (index >= item_id.length * quantity) {
+            return callback(null);
+        }
+
+        // Calculate the current item ID based on index
+        const currentItemIndex = Math.floor(index / quantity);
+        const uniqueIndex = index % quantity;  // unique index for this item
+
+        const currentItemID = item_id[currentItemIndex];
+        const currentItemName = item_name[currentItemIndex];
+        const currentCost = cost[currentItemIndex];
+
+        const query = `UPDATE stocks SET item_status = ?, item_name = ?, project_name = ?, cost = ?, reciever_name = ?, reciever_contact = ?, Location = ?, chalan_id = ?, description = ?, m_o_d = ? WHERE item_id = ?`;
+        const values = [item_status, currentItemName, project_name, currentCost, reciever_name, reciever_contact, Location, chalan_id, description, m_o_d, currentItemID];
+
+        connection.query(query, values, (error, results) => {
+            if (error) {
+                return callback(error);
+            }
+
+            if (results.affectedRows === 0) {
+                return callback(new Error("Record not found"));
+            }
+
+            updateRecord(index + 1, callback);
+        });
+    };
+
+    updateRecord(0, (error) => {
+        if (error) {
+            console.error("Error executing query:", error);
+            return res.status(500).json({ error: "Internal server error", details: error.message });
+        }
+
+        res.status(200).json({ message: "Records updated successfully" });
+    });
+});
 
 
 // For adding items into stocks table (add-item)
@@ -1522,11 +1585,11 @@ app.post("/api/add-item-ooo", (req, res) => {
                 return res.status(500).json({ error: error });
             } else if (result.length === 0) {
                 // No existing item_id found, start from 01
-                const newBaseItemId = `LBPL/Aug-24/01/SIFA/i-ATM`;
+                const newBaseItemId = `LBPL/Aug-24/01/SIFA/${item_name}`;
                 let values = [];
 
                 for (let i = 1; i <= quantity; i++) {
-                    const itemId = `LBPL/Aug-24/${String(i).padStart(2, '0')}/SIFA/i-ATM`;
+                    const itemId = `LBPL/Aug-24/${String(i).padStart(2, '0')}/SIFA/${item_name}`;
                     console.log("New item ids", itemId)
                     values.push([itemId, item_name, supplier_id, stock_holder_name, stock_holder_contact, rack, slot]);
                 }
@@ -1554,7 +1617,7 @@ app.post("/api/add-item-ooo", (req, res) => {
 
                 for (let i = 1; i <= quantity; i++) {
                     const newItemNumber = lastNumber + i;
-                    const newItemId = `LBPL/Aug-24/${String(newItemNumber).padStart(2, '0')}/SIFA/i-ATM`;
+                    const newItemId = `LBPL/Aug-24/${String(newItemNumber).padStart(2, '0')}/SIFA/${item_name}`;
                     console.log("New item id from previous data", newItemId)
 
                     values.push([newItemId, item_name, supplier_id, stock_holder_name, stock_holder_contact, rack, slot]);
@@ -1576,7 +1639,77 @@ app.post("/api/add-item-ooo", (req, res) => {
     }
 });
 
+//Made based on existing Inventory table naming format for item_id
+app.post("/api/add-item-new", (req, res) => {
+    const { quantity, stock_holder_name, stock_holder_contact, rack, slot, supplier_id, item_name } = req.body;
 
+    console.log("Data from body", req.body);
+    // console.log("Item name", item_name);
+
+    // Validate required fields
+    if (!quantity || !supplier_id || !stock_holder_name || !stock_holder_contact || !rack || !slot || !item_name) {
+        return res.status(400).json({ error: "Missing required fields" });
+    } else {
+        let query = `SELECT item_id FROM inventory.stocks WHERE item_name = ? ORDER BY 1 DESC LIMIT 1;`;
+        connection.query(query, [item_name], (error, result) => {
+            if (error) {
+                console.log("Error fetching item name details.");
+                return res.status(500).json({ error: error });
+            } else if (result.length === 0) {
+                // No existing item_id found, start from 01
+                const newBaseItemId = `LBPL/24-25/${item_name}/01`;
+                let values = [];
+
+                for (let i = 1; i <= quantity; i++) {
+                    const itemId = `LBPL/24-25/${item_name}/${String(i).padStart(2, '0')}`;
+                    console.log("New item ids", itemId)
+                    values.push([itemId, item_name, supplier_id, stock_holder_name, stock_holder_contact, rack, slot]);
+                }
+
+                const insertQuery = `INSERT INTO inventory.stocks 
+                                     (item_id, item_name, supplier_id, stock_holder_name, stock_holder_contact, rack, slot) 
+                                     VALUES ?`;
+
+                connection.query(insertQuery, [values], (error) => {
+                    if (error) {
+                        console.log("Error inserting new items.");
+                        return res.status(500).json({ error: error });
+                    }
+                    return res.status(200).json({ message: "Items added successfully!" });
+                });
+            } else {
+                // Existing item_id found, increment the last number
+                let lastItemId = result[0].item_id;
+                let lastNumber = parseInt(lastItemId.split('/')[3]);
+                let values = [];    
+
+                console.log("Last item id", lastItemId)
+                console.log("Last item number", lastNumber)
+
+
+                for (let i = 1; i <= quantity; i++) {
+                    const newItemNumber = lastNumber + i;
+                    const newItemId = `LBPL/24-25/${item_name}/${String(newItemNumber).padStart(2, '0')}`;
+                    console.log("New item id from previous data", newItemId)
+
+                    values.push([newItemId, item_name, supplier_id, stock_holder_name, stock_holder_contact, rack, slot]);
+                }
+
+                const insertQuery = `INSERT INTO inventory.stocks 
+                                     (item_id, item_name, supplier_id, stock_holder_name, stock_holder_contact, rack, slot) 
+                                     VALUES ?`;
+
+                connection.query(insertQuery, [values], (error) => {
+                    if (error) {
+                        console.log("Error inserting new items.");
+                        return res.status(500).json({ error: error });
+                    }
+                    return res.status(200).json({ message: "Items added successfully!" });
+                });
+            }
+        });
+    }
+});
 
 app.get("/supplier-dropdown", (req, res) => {
     connection.query("SELECT distinct name, id FROM suppliers", (error, results) => {
