@@ -2828,7 +2828,7 @@ app.get('/deleted-item-request', (req, res) => {
 
 //Delete item by IM => Added item list
 
-app.post("/delete-request-for-item", (req, res) => {
+app.post("/delete-request-item-accept", (req, res) => {
     // const allowedRoles = ["Admin"];
 
     // if (!allowedRoles.includes(req.user_data.role)) {
@@ -2842,6 +2842,36 @@ app.post("/delete-request-for-item", (req, res) => {
 
     // Update status of query in database
     const sql = `UPDATE stocks SET item_status = 5 WHERE item_id = ?`;
+
+    connection.query(sql, [item_id], (err, result) => {
+        if (err) {
+            console.error('Error updating query status: ', err);
+            return res.status(500).json({ message: 'Error updating query status' });
+        }
+
+        if (result.affectedRows === 0) {
+            return res.status(404).json({ message: 'Query not found' });
+        }
+
+        console.log('Query status updated successfully');
+        res.status(200).json({ message: 'Query status updated successfully' });
+    });
+})
+
+app.post("/delete-request-item-decline", (req, res) => {
+    // const allowedRoles = ["Admin"];
+
+    // if (!allowedRoles.includes(req.user_data.role)) {
+    //     return res
+    //         .status(403)
+    //         .json({ error: "Permission denied. Insufficient role." });
+    // }
+
+    const { item_id } = req.body;
+
+
+    // Update status of query in database
+    const sql = `UPDATE stocks SET item_status = 0 WHERE item_id = ?`;
 
     connection.query(sql, [item_id], (err, result) => {
         if (err) {
