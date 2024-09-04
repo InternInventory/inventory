@@ -1732,7 +1732,7 @@ app.get("/item-dropdown", (req, res) => {
 })
 
 app.get("/stock-count", verifyToken, (req, res) => {
-    connection.query("SELECT distinct item_name, COUNT(item_name) AS quantity FROM stocks GROUP BY item_name ORDER BY item_name ASC;", (error, results) => {
+    connection.query("SELECT distinct item_name, COUNT(item_name) AS quantity FROM stocks WHERE item_status = 0 OR item_status = 1 OR item_status = 5 GROUP BY item_name ORDER BY item_name ASC;", (error, results) => {
         if (error) {
             console.error('Error fetching items from database ');
             return res.status(500).json({ error: "Internal server error" })
@@ -2764,6 +2764,9 @@ app.get('/gen-barcode', (req, res) => {
     }
 });
 
+
+//Item Delete Request Page
+
 app.get('/deleted-item-list', (req, res) => {
     //const { item_name } = req.body;
 
@@ -2775,6 +2778,9 @@ app.get('/deleted-item-list', (req, res) => {
         res.json({ items: results });
     });
 })
+
+
+//Item Delete Request Page => On click Accept = PM
 
 app.post("/delete-item", (req, res) => {
     // const allowedRoles = ["Admin"];
@@ -2806,10 +2812,12 @@ app.post("/delete-item", (req, res) => {
     });
 })
 
-app.get('/deleted-request', verifyToken, (req, res) => {
+//Deleted Item list Page = IM
+
+app.get('/deleted-item-request', (req, res) => {
 
     // 0 = Pending, 1 = Approved, 2 = Declined, 5 = Delete Request
-    connection.query("SELECT * FROM stocks WHERE item_status = 5 ORDER BY req_date DESC", (error, results) => {
+    connection.query("SELECT * FROM stocks WHERE item_status = 5 ORDER BY deleted_date DESC", (error, results) => {
         if (error) {
             console.error('Error fetching items from database', error.stack);
             return res.status(500).json({ error: "Internal server error" })
