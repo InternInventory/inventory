@@ -1681,7 +1681,7 @@ app.post("/api/add-item-new", (req, res) => {
                 // Existing item_id found, increment the last number
                 let lastItemId = result[0].item_id;
                 let lastNumber = parseInt(lastItemId.split('/')[3]);
-                let values = [];    
+                let values = [];
 
                 console.log("Last item id", lastItemId)
                 console.log("Last item number", lastNumber)
@@ -2764,7 +2764,59 @@ app.get('/gen-barcode', (req, res) => {
     }
 });
 
+app.get('/deleted-item-list', (req, res) => {
+    //const { item_name } = req.body;
 
+    connection.query('SELECT item_id, item_name, supplier_id, stock_holder_name, stock_holder_contact, stock_status, working_status, rack, slot, deleted_date FROM stocks WHERE item_status = 4 ORDER BY deleted_date desc', (error, results) => {
+        if (error) {
+            console.error('Error fetching items from database:', error.stack);
+            return res.status(500).json({ error: 'Internal server error' });
+        }
+        res.json({ items: results });
+    });
+})
+
+app.post("/delete-item", (req, res) => {
+    // const allowedRoles = ["Admin"];
+
+    // if (!allowedRoles.includes(req.user_data.role)) {
+    //     return res
+    //         .status(403)
+    //         .json({ error: "Permission denied. Insufficient role." });
+    // }
+
+    const { item_id } = req.body;
+
+
+    // Update status of query in database
+    const sql = `UPDATE stocks SET item_status = 4 WHERE item_id = ?`;
+
+    connection.query(sql, [item_id], (err, result) => {
+        if (err) {
+            console.error('Error updating query status: ', err);
+            return res.status(500).json({ message: 'Error updating query status' });
+        }
+
+        if (result.affectedRows === 0) {
+            return res.status(404).json({ message: 'Query not found' });
+        }
+
+        console.log('Query status updated successfully');
+        res.status(200).json({ message: 'Query status updated successfully' });
+    });
+})
+
+app.get('/deleted-request', verifyToken, (req, res) => {
+
+    // 0 = Pending, 1 = Approved, 2 = Declined, 5 = Delete Request
+    connection.query("SELECT * FROM stocks WHERE item_status = 5 ORDER BY req_date DESC", (error, results) => {
+        if (error) {
+            console.error('Error fetching items from database', error.stack);
+            return res.status(500).json({ error: "Internal server error" })
+        }
+        res.json({ items: results });
+    });
+})
 
 const port = process.env.PORT || 5050;
 app.listen(port, () => {
