@@ -131,7 +131,7 @@ app.post('/login', async (req, res) => {
                 return;
             }
 
-            res.status(200).json({ "token": token, "role": user.role, "first_name": user.first_name });
+            res.status(200).json({ "token": token, "role": user.role, "first_name": user.first_name, "user_id" : user.id });
         });
 
 
@@ -2838,13 +2838,13 @@ app.post("/delete-request-item-accept", (req, res) => {
     //         .json({ error: "Permission denied. Insufficient role." });
     // }
 
-    const { item_id } = req.body;
+    const { item_id, deleted_by } = req.body;
 
 
     // Update status of query in database
-    const sql = `UPDATE stocks SET item_status = 5 WHERE item_id = ?`;
+    const sql = `UPDATE stocks SET item_status = 5, deleted_by = ? WHERE item_id = ?`;
 
-    connection.query(sql, [item_id], (err, result) => {
+    connection.query(sql, [deleted_by, item_id], (err, result) => {
         if (err) {
             console.error('Error updating query status: ', err);
             return res.status(500).json({ message: 'Error updating query status' });
