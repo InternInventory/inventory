@@ -2839,7 +2839,7 @@ app.post("/delete-request-item-accept", (req, res) => {
     // }
 
     const { item_id, deleted_by } = req.body;
-
+console.log(`itemid ${item_id}, deletedby ${deleted_by}`);
 
     // Update status of query in database
     const sql = `UPDATE stocks SET item_status = 5, deleted_by = ? WHERE item_id = ?`;
