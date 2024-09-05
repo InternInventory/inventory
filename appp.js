@@ -21,6 +21,7 @@ const bwipjs = require('bwip-js');
 const archiver = require('archiver');
 const { createCanvas } = require('canvas');
 const Barcode = require('jsbarcode');
+const qr = require('qrcode');
 //const { isWeakMap } = require('util/types');
 /// hellol
 
@@ -259,7 +260,7 @@ app.post('/hash_password', async (req, res) => {
 app.get('/added-item-list', (req, res) => {
     //const { item_name } = req.body;
 
-    connection.query('SELECT item_id, item_name, supplier_id, stock_holder_name, stock_holder_contact, stock_status, working_status, rack, slot, added_date FROM stocks ORDER BY added_date desc', (error, results) => {
+    connection.query('SELECT item_id, item_name, supplier_id, stock_holder_name, stock_holder_contact, stock_status, working_status, rack, slot, added_date FROM stocks WHERE item_status = 0 OR item_status = 1 ORDER BY added_date desc', (error, results) => {
         if (error) {
             console.error('Error fetching items from database:', error.stack);
             return res.status(500).json({ error: 'Internal server error' });
@@ -2887,6 +2888,34 @@ app.post("/delete-request-item-decline", (req, res) => {
         res.status(200).json({ message: 'Query status updated successfully' });
     });
 })
+
+app.get('/gen-qr', (req, res) => {
+    const { item_id } = req.query;
+
+    if (!item_id) {
+        return res.status(400).send('item_id query parameter is required');
+    }
+
+    try {
+        // Generate the QR code
+        qr.toBuffer(item_id, { 
+            errorCorrectionLevel: 'H',  // High error correction level
+            type: 'png',                // Output type
+            scale: 10,                  // Scale the QR code size
+        }, (err, buffer) => {
+            if (err) {
+                res.status(500).send('Error generating QR code');
+            } else {
+                // Set response headers for downloading the QR code
+                res.setHeader('Content-Type', 'image/png');
+                res.setHeader('Content-Disposition', `attachment; filename=qr-${item_id}.png`);
+                res.send(buffer);
+            }
+        });
+    } catch (err) {
+        res.status(500).send('Error processing request');
+    }
+});
 
 const port = process.env.PORT || 5050;
 app.listen(port, () => {
