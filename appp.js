@@ -260,7 +260,7 @@ app.post('/hash_password', async (req, res) => {
 app.get('/added-item-list', (req, res) => {
     //const { item_name } = req.body;
 
-    connection.query('SELECT item_id, item_name, supplier_id, stock_holder_name, stock_holder_contact, stock_status, working_status, rack, slot, added_date FROM stocks WHERE item_status = 0 OR item_status = 1 ORDER BY added_date desc', (error, results) => {
+    connection.query('SELECT item_id, item_name, supplier_id, stock_holder_name, stock_holder_contact, stock_status, working_status, rack, slot, added_date FROM stocks WHERE item_status = 0 OR item_status = 1 OR item_status = 5 ORDER BY added_date desc', (error, results) => {
         if (error) {
             console.error('Error fetching items from database:', error.stack);
             return res.status(500).json({ error: 'Internal server error' });
@@ -1259,7 +1259,7 @@ app.post("/send-material-ooo", (req, res) => {
         const currentItemName = item_name[currentItemIndex];
         const currentCost = cost[currentItemIndex];
 
-        const query = `UPDATE stocks SET item_status = ?, item_name = ?, project_name = ?, cost = ?, reciever_name = ?, reciever_contact = ?, Location = ?, chalan_id = ?, description = ?, m_o_d = ? WHERE item_id = ?`;
+        const query = `UPDATE stocks SET updated_date = CURRENT_TIMESTAMP, item_status = ?, item_name = ?, project_name = ?, cost = ?, reciever_name = ?, reciever_contact = ?, Location = ?, chalan_id = ?, description = ?, m_o_d = ? WHERE item_id = ?`;
         const values = [item_status, currentItemName, project_name, currentCost, reciever_name, reciever_contact, Location, chalan_id, description, m_o_d, currentItemID];
 
         connection.query(query, values, (error, results) => {
@@ -2792,26 +2792,25 @@ app.post("/delete-item", (req, res) => {
     //         .json({ error: "Permission denied. Insufficient role." });
     // }
 
-    const { item_id } = req.body;
+    const { item_id, deleted_by } = req.body;
 
+    // Update item_status and set deleted_date to current timestamp
+    const sql = `UPDATE stocks SET item_status = 4, deleted_date = CURRENT_TIMESTAMP, deleted_by = ? WHERE item_id = ?`;
 
-    // Update status of query in database
-    const sql = `UPDATE stocks SET item_status = 4 WHERE item_id = ?`;
-
-    connection.query(sql, [item_id], (err, result) => {
+    connection.query(sql, [deleted_by, item_id], (err, result) => {
         if (err) {
             console.error('Error updating query status: ', err);
             return res.status(500).json({ message: 'Error updating query status' });
         }
 
         if (result.affectedRows === 0) {
-            return res.status(404).json({ message: 'Query not found' });
+            return res.status(404).json({ message: 'Item not found' });
         }
 
-        console.log('Query status updated successfully');
-        res.status(200).json({ message: 'Query status updated successfully' });
+        console.log('Item status updated successfully');
+        res.status(200).json({ message: 'Item deleted successfully' });
     });
-})
+});
 
 //Deleted Item list Page = IM
 
@@ -2838,13 +2837,13 @@ app.post("/delete-request-item-accept", (req, res) => {
     //         .json({ error: "Permission denied. Insufficient role." });
     // }
 
-    const { item_id, deleted_by } = req.body;
-console.log(`itemid ${item_id}, deletedby ${deleted_by}`);
+    const { item_id, requested_by } = req.body;
+console.log(`itemid ${item_id}, requestedby ${requested_by}`);
 
     // Update status of query in database
-    const sql = `UPDATE stocks SET item_status = 5, deleted_by = ? WHERE item_id = ?`;
+    const sql = `UPDATE stocks SET item_status = 5, requested_date = CURRENT_TIMESTAMP, requested_by = ? WHERE item_id = ?`;
 
-    connection.query(sql, [deleted_by, item_id], (err, result) => {
+    connection.query(sql, [requested_by, item_id], (err, result) => {
         if (err) {
             console.error('Error updating query status: ', err);
             return res.status(500).json({ message: 'Error updating query status' });
