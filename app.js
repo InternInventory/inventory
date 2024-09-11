@@ -25,13 +25,7 @@ const connection = mysql.createPool({
     database: process.env.DB_DATABASE,
 });
 
-// // Test
-// const connection = mysql.createPool({
-//     host: "3.7.158.221",
-//     user: "admin_buildINT",
-//     password: "buildINT@2023$",
-//     database: "inventory",
-// });
+
 
 connection.getConnection((err) => {
     if (err) throw err;

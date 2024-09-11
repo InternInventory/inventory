@@ -771,7 +771,6 @@ app.get('/out-of-stock', verifyToken, (req, res) => {
     })
 })
 
-
 app.post('/get-report', verifyToken, (req, res) => {
     console.log(req.body);
     const { in_out, site_details, product_name, from_date, to_date } = req.body;
@@ -2144,6 +2143,46 @@ app.get('/gen-qr', (req, res) => {
         res.status(500).send('Error processing request');
     }
 });
+
+app.post('/request-mat-ooo', verifyToken, (req, res) => {
+    const { name, site_name, material, project_name, description, quantity } = req.body;
+
+    // Assuming 'material' and 'quantity' are arrays
+    if (!Array.isArray(material) || !Array.isArray(quantity) || material.length !== quantity.length) {
+        return res.status(400).json({ error: 'Material and quantity should be arrays of the same length' });
+    }
+
+    const requests = material.map((mat, index) => ({
+        name,
+        site_name,
+        material: mat,
+        project_name,
+        description,
+        quantity: quantity[index],
+    }));
+
+    // Prepare query
+    const query = 'INSERT INTO requestmaterial (name, site_name, material, project_name, description, quantity) VALUES ?';
+
+    // Data format for bulk insert
+    const values = requests.map(req => [req.name, req.site_name, req.material, req.project_name, req.description, req.quantity]);
+
+    connection.query(query, [values], (error, results) => {
+        if (error) {
+            console.error('Error inserting items into the database: ' + error.stack);
+            return res.status(500).json({ error: 'Internal server error' });
+        }
+        console.log('Items added to database. Rows affected: ' + results.affectedRows);
+
+        // Send email (assuming you want to send an email for each request)
+        requests.forEach(request => {
+            sendEmail('theo48173@gmail.com', request);
+        });
+
+        res.status(201).json({ message: 'Requests added successfully', items: requests });
+    });
+});
+
 
 const port = process.env.PORT || 5050;
 app.listen(port, () => {
