@@ -218,7 +218,7 @@ app.get('/history', verifyToken, (req, res) => {
         res.json({ items: results });
     });
 })
-
+    
 
 app.get('/profile', verifyToken, (req, res) => {
     const userId = req.session.user.id;
@@ -443,6 +443,7 @@ app.post('/forgot-password', (req, res) => {
         });
     });
 });
+
 // Endpoint to verify OTP
 app.post('/verify-otp', (req, res) => {
     const { email, otp } = req.body;
@@ -1345,7 +1346,7 @@ app.post("/api/add-item-new", (req, res) => {
     if (!quantity || !supplier_id || !stock_holder_name || !stock_holder_contact || !rack || !slot || !item_name) {
         return res.status(400).json({ error: "Missing required fields" });
     } else {
-        let query = `SELECT item_id FROM inventory.stocks WHERE item_name = ? ORDER BY 1 DESC LIMIT 1;`;
+        let query = `SELECT item_id FROM stocks WHERE item_name = ? ORDER BY added_date DESC LIMIT 1;`;
         connection.query(query, [item_name], (error, result) => {
             if (error) {
                 console.log("Error fetching item name details.");
@@ -1772,7 +1773,7 @@ app.get("/user-list", (req, res) => {
 });
 
 // Multer setup for file upload
-const upload = multer({ dest: 'uploads/' });
+const upload = multer({ dest: 'uploads/', limits: { fileSize: 10 * 1024 * 1024 } });
 
 // API endpoint to upload XLSX file
 app.post('/upload', upload.single('file'), (req, res) => {
@@ -1789,16 +1790,16 @@ app.post('/upload', upload.single('file'), (req, res) => {
 
     // Insert rows into the MySQL database
     rows.forEach(row => {
-        const sql = `INSERT INTO stocks (
+        const sql = `INSERT INTO stocks_test (
             item_id, item_name, make, mac_id, stock_holder_name, stock_holder_contact, stock_status, working_status, 
             rack, slot, added_date, supplier_id, item_status, project_name, cost, reciever_name, 
-            reciever_contact, location, updated_date, chalan_id, description, m_o_d, requested_date, deleted_by, requested_by, deleted_by
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
+            reciever_contact, Location, updated_date, chalan_id, description, m_o_d, requested_date, deleted_date, requested_by, deleted_by
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
 
         const values = [
             row.item_id, row.item_name, row.make, row.mac_id, row.stock_holder_name, row.stock_holder_contact, row.stock_status, row.working_status,
             row.rack, row.slot, row.added_date, row.supplier_id, row.item_status, row.project_name, row.cost, row.reciever_name,
-            row.reciever_contact, row.location, row.updated_date, row.chalan_id, row.description, row.m_o_d, row.requested_date, row.deleted_by, row.requested_by, row.deleted_by
+            row.reciever_contact, row.Location, row.updated_date, row.chalan_id, row.description, row.m_o_d, row.requested_date, row.deleted_date, row.requested_by, row.deleted_by
         ];
 
         connection.query(sql, values, (err) => {
