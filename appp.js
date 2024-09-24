@@ -198,7 +198,7 @@ app.get("/added-item-list", (req, res) => {
   //const { item_name } = req.body;
 
   connection.query(
-    "SELECT item_id, item_name, supplier_id, stock_holder_name, stock_holder_contact, stock_status, working_status, rack, slot, added_date FROM stocks_test1_test1 WHERE item_status = 0 OR item_status = 1 ORDER BY added_date desc",
+    "SELECT item_id, item_name, supplier_id, stock_holder_name, stock_holder_contact, stock_status, working_status, rack, slot, added_date FROM stocks_test1 WHERE item_status = 0 OR item_status = 1 ORDER BY added_date desc",
     (error, results) => {
       if (error) {
         console.error("Error fetching items from database:", error.stack);
@@ -1910,6 +1910,7 @@ app.get("/item-dropdown", (req, res) => {
   );
 });
 
+//stocks_test1 is my main table in mysql
 app.get("/stock-count", verifyToken, (req, res) => {
   connection.query(
     "SELECT distinct item_name, COUNT(item_name) AS quantity FROM stocks_test1 WHERE item_status = 0 OR item_status = 1 OR item_status = 5 GROUP BY item_name ORDER BY item_name ASC;",
