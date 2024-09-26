@@ -150,7 +150,7 @@ app.post("/login", async (req, res) => {
     }
   );
 });
-//To hash password
+//To hash password in database
 app.post("/hash_password", async (req, res) => {
   try {
     // Get the password from the request body
