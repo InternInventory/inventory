@@ -1786,6 +1786,7 @@ app.post("/api/add-item-new", (req, res) => {
     slot,
     supplier_id,
     item_name,
+    added_by,
   } = req.body;
 
   console.log("Data from body", req.body);
@@ -1799,7 +1800,8 @@ app.post("/api/add-item-new", (req, res) => {
     !stock_holder_contact ||
     !rack ||
     !slot ||
-    !item_name
+    !item_name ||
+    !added_by
   ) {
     return res.status(400).json({ error: "Missing required fields" });
   } else {
@@ -1827,11 +1829,12 @@ app.post("/api/add-item-new", (req, res) => {
             stock_holder_contact,
             rack,
             slot,
+            added_by
           ]);
         }
 
         const insertQuery = `INSERT INTO inventory.stocks_test1 
-                                     (item_id, item_name, supplier_id, stock_holder_name, stock_holder_contact, rack, slot) 
+                                     (item_id, item_name, supplier_id, stock_holder_name, stock_holder_contact, rack, slot, added_by) 
                                      VALUES ?`;
 
         connection.query(insertQuery, [values], (error) => {
@@ -1865,11 +1868,12 @@ app.post("/api/add-item-new", (req, res) => {
             stock_holder_contact,
             rack,
             slot,
+            added_by
           ]);
         }
 
         const insertQuery = `INSERT INTO inventory.stocks_test1 
-                                     (item_id, item_name, supplier_id, stock_holder_name, stock_holder_contact, rack, slot) 
+                                     (item_id, item_name, supplier_id, stock_holder_name, stock_holder_contact, rack, slot, added_by) 
                                      VALUES ?`;
 
         connection.query(insertQuery, [values], (error) => {
@@ -1909,8 +1913,7 @@ app.get("/item-dropdown", (req, res) => {
     }
   );
 });
-
-//stocks_test1 is my main table in mysql
+//stocks_test1 is my main table in
 app.get("/stock-count", verifyToken, (req, res) => {
   connection.query(
     "SELECT distinct item_name, COUNT(item_name) AS quantity FROM stocks_test1 WHERE item_status = 0 OR item_status = 1 OR item_status = 5 GROUP BY item_name ORDER BY item_name ASC;",
