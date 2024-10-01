@@ -2575,7 +2575,7 @@ app.get("/deleted-item-list", (req, res) => {
   //const { item_name } = req.body;
 
   connection.query(
-    "SELECT item_id, item_name, supplier_id, stock_holder_name, stock_holder_contact, stock_status, working_status, rack, slot, deleted_date, deleted_by+ FROM stocks_test1 WHERE item_status = 4 ORDER BY deleted_date desc",
+    "SELECT item_id, item_name, supplier_id, stock_holder_name, stock_holder_contact, stock_status, working_status, rack, slot, deleted_date, deleted_by FROM stocks_test1 WHERE item_status = 4 ORDER BY deleted_date desc",
     (error, results) => {
       if (error) {
         console.error("Error fetching items from database:", error.stack);
