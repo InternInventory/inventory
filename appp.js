@@ -155,7 +155,7 @@ app.post("/hash_password", async (req, res) => {
   try {
     // Get the password from the request body
     const { username, password } = req.body;
-
+    
     // Check if password is provided
     if (!password) {
       return res.status(400).json({ error: "Password not provided" });
